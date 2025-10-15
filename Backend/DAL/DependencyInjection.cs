@@ -9,12 +9,16 @@ namespace Swen3.API.DAL
     {
         public static IServiceCollection AddSwenDal(this IServiceCollection services, IConfiguration configuration)
         {
-            var conn = configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Missing DefaultConnection");
+            var conn = configuration.GetConnectionString("DefaultConnection")
+                       ?? throw new InvalidOperationException("Missing DefaultConnection string.");
 
             services.AddDbContext<AppDbContext>(options =>
-            options.UseNpgsql(conn));
-            services.AddScoped<IUnitOfWork, UnitOfWork>();
+                options.UseNpgsql(conn));
+
+            services.AddScoped<DocumentRepository>();
+
             return services;
+
         }
     }
 }

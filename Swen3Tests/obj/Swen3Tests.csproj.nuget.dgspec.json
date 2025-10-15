@@ -1,25 +1,32 @@
 {
   "format": 1,
   "restore": {
-    "/Users/bo/Swen3/Swen3Tests/Swen3Tests.csproj": {}
+    "G:\\Programming\\Swen3\\Swen3Tests\\Swen3Tests.csproj": {}
   },
   "projects": {
-    "/Users/bo/Swen3/backend/Swen3.API.csproj": {
+    "G:\\Programming\\Swen3\\backend\\Swen3.API.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/Users/bo/Swen3/backend/Swen3.API.csproj",
+        "projectUniqueName": "G:\\Programming\\Swen3\\backend\\Swen3.API.csproj",
         "projectName": "Swen3.API",
-        "projectPath": "/Users/bo/Swen3/backend/Swen3.API.csproj",
-        "packagesPath": "/Users/bo/.nuget/packages/",
-        "outputPath": "/Users/bo/Swen3/backend/obj/",
+        "projectPath": "G:\\Programming\\Swen3\\backend\\Swen3.API.csproj",
+        "packagesPath": "C:\\Users\\Barni\\.nuget\\packages\\",
+        "outputPath": "G:\\Programming\\Swen3\\backend\\obj\\",
         "projectStyle": "PackageReference",
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
         "configFilePaths": [
-          "/Users/bo/.nuget/NuGet/NuGet.Config"
+          "C:\\Users\\Barni\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
         "originalTargetFrameworks": [
           "net8.0"
         ],
         "sources": {
+          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+          "C:\\Program Files\\dotnet\\library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
@@ -37,7 +44,8 @@
           "enableAudit": "true",
           "auditLevel": "low",
           "auditMode": "direct"
-        }
+        },
+        "SdkAnalysisLevel": "9.0.300"
       },
       "frameworks": {
         "net8.0": {
@@ -91,34 +99,41 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/8.0.408/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.304/PortableRuntimeIdentifierGraph.json"
         }
       }
     },
-    "/Users/bo/Swen3/Swen3Tests/Swen3Tests.csproj": {
+    "G:\\Programming\\Swen3\\Swen3Tests\\Swen3Tests.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/Users/bo/Swen3/Swen3Tests/Swen3Tests.csproj",
+        "projectUniqueName": "G:\\Programming\\Swen3\\Swen3Tests\\Swen3Tests.csproj",
         "projectName": "Swen3Tests",
-        "projectPath": "/Users/bo/Swen3/Swen3Tests/Swen3Tests.csproj",
-        "packagesPath": "/Users/bo/.nuget/packages/",
-        "outputPath": "/Users/bo/Swen3/Swen3Tests/obj/",
+        "projectPath": "G:\\Programming\\Swen3\\Swen3Tests\\Swen3Tests.csproj",
+        "packagesPath": "C:\\Users\\Barni\\.nuget\\packages\\",
+        "outputPath": "G:\\Programming\\Swen3\\Swen3Tests\\obj\\",
         "projectStyle": "PackageReference",
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
         "configFilePaths": [
-          "/Users/bo/.nuget/NuGet/NuGet.Config"
+          "C:\\Users\\Barni\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
         "originalTargetFrameworks": [
           "net8.0"
         ],
         "sources": {
+          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+          "C:\\Program Files\\dotnet\\library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
-              "/Users/bo/Swen3/backend/Swen3.API.csproj": {
-                "projectPath": "/Users/bo/Swen3/backend/Swen3.API.csproj"
+              "G:\\Programming\\Swen3\\backend\\Swen3.API.csproj": {
+                "projectPath": "G:\\Programming\\Swen3\\backend\\Swen3.API.csproj"
               }
             }
           }
@@ -132,7 +147,8 @@
           "enableAudit": "true",
           "auditLevel": "low",
           "auditMode": "direct"
-        }
+        },
+        "SdkAnalysisLevel": "9.0.300"
       },
       "frameworks": {
         "net8.0": {
@@ -183,7 +199,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/8.0.408/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.304/PortableRuntimeIdentifierGraph.json"
         }
       }
     }
