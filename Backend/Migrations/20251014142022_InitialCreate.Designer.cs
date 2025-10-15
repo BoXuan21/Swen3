@@ -12,7 +12,7 @@ using Swen3.API.DAL;
 namespace Swen3.API.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251009085936_InitialCreate")]
+    [Migration("20251014142022_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
