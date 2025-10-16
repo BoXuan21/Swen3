@@ -20,15 +20,12 @@ namespace Swen3.API.DAL
         {
             base.OnModelCreating(modelBuilder);
 
-            // Seed a system user for documents without specific uploaders
-            modelBuilder.Entity<User>().HasData(
-                new User
-                {
-                    Id = Guid.Parse("00000000-0000-0000-0000-000000000001"),
-                    Username = "System",
-                    Email = "system@swen3.local"
-                }
-            );
+            // Configure Document-User relationship as optional
+            modelBuilder.Entity<Document>()
+                .HasOne(d => d.UploadedBy)
+                .WithMany(u => u.UploadedDocuments)
+                .HasForeignKey(d => d.UploadedById)
+                .IsRequired(false); // This makes the foreign key optional
 
             modelBuilder.Entity<DocumentTag>().HasKey(dt => new { dt.DocumentId, dt.TagId });
             modelBuilder.Entity<Tag>().HasIndex(t => t.Name).IsUnique();

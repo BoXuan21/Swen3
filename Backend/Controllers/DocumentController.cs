@@ -45,8 +45,8 @@ namespace Swen3.API.Controllers
                 Title = dto.Title,
                 FileName = dto.FileName,
                 MimeType = dto.MimeType,
-                Size = dto.Size,
-                UploadedById = systemUserId
+                Size = dto.Size
+                // UploadedById is now optional and will be null
             };
 
             await _repo.AddAsync(doc);

@@ -8,8 +8,8 @@
         public string MimeType { get; set; } = null!;
         public long Size { get; set; }
         public DateTime UploadedAt { get; set; } = DateTime.UtcNow;
-        public Guid UploadedById { get; set; }
-        public User UploadedBy { get; set; } = null!;
+        public Guid? UploadedById { get; set; }
+        public User? UploadedBy { get; set; }
 
         public ICollection<DocumentTag> DocumentTags { get; set; } = new List<DocumentTag>();
     }
