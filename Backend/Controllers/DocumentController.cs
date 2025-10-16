@@ -37,13 +37,16 @@ namespace Swen3.API.Controllers
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] DocumentDto dto)
         {
+            // Use the system user ID for documents without specific uploaders
+            var systemUserId = Guid.Parse("00000000-0000-0000-0000-000000000001");
+            
             var doc = new Document
             {
                 Title = dto.Title,
                 FileName = dto.FileName,
                 MimeType = dto.MimeType,
                 Size = dto.Size,
-                UploadedById = Guid.NewGuid() // temporary
+                UploadedById = systemUserId
             };
 
             await _repo.AddAsync(doc);

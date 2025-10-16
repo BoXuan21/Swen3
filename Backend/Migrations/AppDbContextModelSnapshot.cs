@@ -106,6 +106,14 @@ namespace Swen3.API.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Users");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0000-000000000001"),
+                            Email = "system@swen3.local",
+                            Username = "System"
+                        });
                 });
 
             modelBuilder.Entity("Swen3.API.DAL.Models.Document", b =>
