@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Swen3.API.DAL;
@@ -11,9 +12,11 @@ using Swen3.API.DAL;
 namespace Swen3.API.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251016075950_AddSystemUser")]
+    partial class AddSystemUser
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -46,7 +49,7 @@ namespace Swen3.API.Migrations
                     b.Property<DateTime>("UploadedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("UploadedById")
+                    b.Property<Guid>("UploadedById")
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
@@ -120,7 +123,9 @@ namespace Swen3.API.Migrations
                 {
                     b.HasOne("Swen3.API.DAL.Models.User", "UploadedBy")
                         .WithMany("UploadedDocuments")
-                        .HasForeignKey("UploadedById");
+                        .HasForeignKey("UploadedById")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("UploadedBy");
                 });
