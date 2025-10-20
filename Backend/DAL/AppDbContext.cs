@@ -11,24 +11,11 @@ namespace Swen3.API.DAL
 
 
         public DbSet<Document> Documents => Set<Document>();
-        public DbSet<Tag> Tags => Set<Tag>();
-        public DbSet<DocumentTag> DocumentTags => Set<DocumentTag>();
-        public DbSet<User> Users => Set<User>();
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
-
-            // Configure Document-User relationship as optional
-            modelBuilder.Entity<Document>()
-                .HasOne(d => d.UploadedBy)
-                .WithMany(u => u.UploadedDocuments)
-                .HasForeignKey(d => d.UploadedById)
-                .IsRequired(false); // This makes the foreign key optional
-
-            modelBuilder.Entity<DocumentTag>().HasKey(dt => new { dt.DocumentId, dt.TagId });
-            modelBuilder.Entity<Tag>().HasIndex(t => t.Name).IsUnique();
         }
     }
 }
