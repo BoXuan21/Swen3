@@ -14,6 +14,21 @@ services:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
 
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: swen3-api
+    ports:
+      - "8080:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=swen_db;Username=swen3;Password=swen3pass
+    depends_on:
+      - db
+    restart: unless-stopped
+
 volumes:
   postgres_data:
     driver: local

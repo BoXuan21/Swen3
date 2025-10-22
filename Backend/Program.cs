@@ -1,5 +1,6 @@
 
 using Swen3.API.DAL;
+using Swen3.API.DAL.Mapping;
 
 namespace Backend
 {
@@ -9,6 +10,9 @@ namespace Backend
         {
             var builder = WebApplication.CreateBuilder(args);
             builder.Services.AddSwenDal(builder.Configuration);
+
+            // Added AutoMapper
+            builder.Services.AddAutoMapper(typeof(Program));
 
             builder.Services.AddControllers();
             builder.Services.AddEndpointsApiExplorer();
