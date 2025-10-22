@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Mvc;
 using Swen3.API.DAL.DTOs;
 using Swen3.API.DAL.Interfaces;
 using Swen3.API.DAL.Models;
@@ -11,17 +12,20 @@ namespace Swen3.API.Controllers
     public class DocumentsController : ControllerBase
     {
         private readonly DocumentRepository _repo;
+        private readonly IMapper _mapper;
 
-        public DocumentsController(DocumentRepository repo)
+        public DocumentsController(DocumentRepository repo, IMapper mapper)
         {
             _repo = repo;
+            _mapper = mapper;
         }
 
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
             var documents = await _repo.GetAllAsync();
-            return Ok(documents.Select(d => d.ToDto()));
+            var documentDtos = _mapper.Map<IEnumerable<DocumentDto>>(documents);
+            return Ok(documentDtos);
         }
 
         [HttpGet("{id}")]
@@ -31,22 +35,18 @@ namespace Swen3.API.Controllers
             if (document == null)
                 return NotFound();
 
-            return Ok(document.ToDto());
+            var documentDto = _mapper.Map<DocumentDto>(document);
+            return Ok(documentDto);
         }
 
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] DocumentDto dto)
         {            
-            var doc = new Document
-            {
-                Title = dto.Title,
-                FileName = dto.FileName,
-                MimeType = dto.MimeType,
-                Size = dto.Size
-            };
-
+            var doc = _mapper.Map<Document>(dto);
             await _repo.AddAsync(doc);
-            return CreatedAtAction(nameof(GetById), new { id = doc.Id }, doc.ToDto());
+            
+            var createdDto = _mapper.Map<DocumentDto>(doc);
+            return CreatedAtAction(nameof(GetById), new { id = doc.Id }, createdDto);
         }
 
         [HttpDelete("{id}")]
