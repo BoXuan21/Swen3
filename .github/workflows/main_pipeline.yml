@@ -4,33 +4,9 @@ name: Main pipeline
 on:
   pull_request:
     branches:
-      - master
+      - main
 
 jobs:
-  check-sync:
-    name: Check if PR branch is up to date with master
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout target (master)
-        uses: actions/checkout@v4
-        with:
-          ref: master
-
-      - name: Fetch PR branch
-        run: |
-          git fetch origin ${{ github.head_ref }}:${{ github.head_ref }}
-          git checkout ${{ github.head_ref }}
-
-      - name: Check if branch is behind master
-        run: |
-          git fetch origin master
-          BEHIND=$(git rev-list --count HEAD..origin/master)
-          if [ "$BEHIND" -ne 0 ]; then
-            echo "Branch is behind master by $BEHIND commits."
-            exit 1
-          else
-            echo "Branch is up to date with master."
-          fi
   unit-tests:
     name: Run Unit Tests
     runs-on: ubuntu-latest
