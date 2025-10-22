@@ -2,7 +2,7 @@
 
 namespace Swen3.API.DAL.Interfaces
 {
-    public interface IDocumentRepository : IRepository<Document>
+    public interface IDocumentRepository
     {
         Task<Document?> GetWithTagsAsync(Guid id, CancellationToken cancellationToken = default);
     }

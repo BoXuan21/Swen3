@@ -18,8 +18,6 @@ namespace Swen3.API.DAL.Repositories
         public async Task<IEnumerable<Document>> GetAllAsync()
         {
             return await _ctx.Documents
-                .Include(d => d.DocumentTags)
-                .ThenInclude(dt => dt.Tag)
                 .OrderByDescending(d => d.UploadedAt)
                 .ToListAsync();
         }
@@ -27,8 +25,6 @@ namespace Swen3.API.DAL.Repositories
         public async Task<Document?> GetByIdAsync(Guid id)
         {
             return await _ctx.Documents
-                .Include(d => d.DocumentTags)
-                .ThenInclude(dt => dt.Tag)
                 .FirstOrDefaultAsync(d => d.Id == id);
         }
 
@@ -50,29 +46,6 @@ namespace Swen3.API.DAL.Repositories
             if (doc == null) return;
 
             _ctx.Documents.Remove(doc);
-            await _ctx.SaveChangesAsync();
-        }
-
-        public async Task AddTagAsync(Guid documentId, string tagName)
-        {
-            var document = await _ctx.Documents
-                .Include(d => d.DocumentTags)
-                .FirstOrDefaultAsync(d => d.Id == documentId);
-
-            if (document == null) return;
-
-            var tag = await _ctx.Tags.FirstOrDefaultAsync(t => t.Name == tagName);
-            if (tag == null)
-            {
-                tag = new Tag { Name = tagName };
-                await _ctx.Tags.AddAsync(tag);
-            }
-
-            if (!document.DocumentTags.Any(dt => dt.TagId == tag.Id))
-            {
-                document.DocumentTags.Add(new DocumentTag { DocumentId = document.Id, Tag = tag });
-            }
-
             await _ctx.SaveChangesAsync();
         }
     }
