@@ -2,7 +2,6 @@ using Microsoft.EntityFrameworkCore;
 using Swen3.API.DAL;
 using Swen3.API.DAL.Repositories;
 using Swen3.API.DAL.Models;
-using Swen3.API.DAL.Interfaces;
 
 namespace Swen3Tests.Repositories;
 
