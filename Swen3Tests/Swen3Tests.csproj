@@ -24,7 +24,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="../backend/Swen3.API.csproj" />
+        <ProjectReference Include="../Backend/Swen3.API.csproj" />
     </ItemGroup>
 
 </Project>
