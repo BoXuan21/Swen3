@@ -9,8 +9,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 	ProjectSection(SolutionItems) = preProject
 		.gitignore = .gitignore
 		docker-compose.yml = docker-compose.yml
-		README.md = README.md
 		.github\workflows\main_pipeline.yml = .github\workflows\main_pipeline.yml
+		README.md = README.md
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Swen3Tests", "Swen3Tests\Swen3Tests.csproj", "{AF3895AD-F511-A91F-F834-5370A76DA3EE}"
