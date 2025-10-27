@@ -23,9 +23,9 @@ jobs:
         with:
           dotnet-version: '8.0.x'
       - name: Restore dependencies
-        run: dotnet restore ./backend/Swen3.API/Swen3.API.csproj
+        run: dotnet restore ./Backend/Swen3.API.csproj
       - name: Build the project
-        run: dotnet build ./backend/Swen3.API/Swen3.API.csproj --no-restore
+        run: dotnet build ./Backend/Swen3.API.csproj --no-restore
       - name: Run unit tests
         if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.runTests == 'true' }}
         run: dotnet test ./backend/Swen3.Tests/Swen3.Tests.csproj --no-build --verbosity normal
