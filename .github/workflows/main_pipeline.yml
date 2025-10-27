@@ -1,10 +1,15 @@
-# .github/workflows/check-master-sync.yml
 name: Main pipeline
 
 on:
   pull_request:
     branches:
       - main
+  workflow_dispatch:
+    inputs:
+      runTests:
+        description: 'Run unit tests'
+        required: true
+        default: 'true'
 
 jobs:
   unit-tests:
@@ -22,4 +27,5 @@ jobs:
       - name: Build the project
         run: dotnet build ./backend/Swen3.API/Swen3.API.csproj --no-restore
       - name: Run unit tests
+        if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.runTests == 'true' }}
         run: dotnet test ./backend/Swen3.Tests/Swen3.Tests.csproj --no-build --verbosity normal
