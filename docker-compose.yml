@@ -44,7 +44,7 @@ services:
     image: nginx:alpine
     container_name: swen3-nginx
     ports:
-      - "80:80"
+      - "3030:80"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
     depends_on:
