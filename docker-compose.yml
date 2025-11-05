@@ -23,8 +23,38 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:8080
       - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=swen_db;Username=swen3;Password=swen3pass
+      - Messaging__Host=rabbitmq
+      - Messaging__Port=5672
+      - Messaging__Username=guest
+      - Messaging__Password=guest
+      - Messaging__VirtualHost=/
+      - Messaging__Exchange=documents
+      - Messaging__RoutingKey=document.uploaded
+      - Messaging__Queue=documents.ocr
+      - Messaging__DeadLetterExchange=documents.dlx
+      - Messaging__DeadLetterQueue=documents.ocr.dlq
     depends_on:
       - db
+      - rabbitmq
+    restart: unless-stopped
+
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: swen3-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+      RABBITMQ_DEFAULT_VHOST: "/"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     restart: unless-stopped
 
   frontend:
@@ -52,4 +82,6 @@ services:
 
 volumes:
   postgres_data:
+    driver: local
+  rabbitmq_data:
     driver: local
