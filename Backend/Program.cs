@@ -1,6 +1,7 @@
 
 using Swen3.API.DAL;
 using Swen3.API.DAL.Mapping;
+using Swen3.API.Middleware;
 
 namespace Backend
 {
@@ -26,6 +27,9 @@ namespace Backend
                 app.UseSwagger();
                 app.UseSwaggerUI();
             }
+
+            // Register exception handling middleware (should be early in pipeline)
+            app.UseMiddleware<ExceptionHandlingMiddleware>();
 
             app.UseHttpsRedirection();
             app.UseAuthorization();
