@@ -1,4 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
+using Swen3.API.Common.Exceptions;
 using Swen3.API.DAL;
 using Swen3.API.DAL.Repositories;
 using Swen3.API.DAL.Models;
@@ -19,7 +21,8 @@ public class DocumentRepositoryTests
             .Options;
 
         _context = new AppDbContext(options);
-        _repository = new DocumentRepository(_context);
+        var logger = NullLogger<DocumentRepository>.Instance;
+        _repository = new DocumentRepository(_context, logger);
     }
 
     [TearDown]
@@ -106,6 +109,19 @@ public class DocumentRepositoryTests
         // Assert
         var exists = await _context.Documents.AnyAsync(d => d.Id == document.Id);
         Assert.IsFalse(exists);
+    }
+
+    [Test]
+    public async Task DeleteAsync_WhenDocumentDoesNotExist_ShouldThrowNotFoundException()
+    {
+        // Arrange
+        var nonExistentId = Guid.NewGuid();
+
+        // Act & Assert
+        var ex = Assert.ThrowsAsync<NotFoundException>(async () => await _repository.DeleteAsync(nonExistentId));
+        Assert.IsNotNull(ex);
+        Assert.That(ex.Message, Does.Contain("Document"));
+        Assert.That(ex.Message, Does.Contain(nonExistentId.ToString()));
     }
 
     [Test]
