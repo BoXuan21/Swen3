@@ -1,9 +1,12 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
+using RabbitMQ.Client;
 using Swen3.API.DAL.DTOs;
 using Swen3.API.DAL.Interfaces;
 using Swen3.API.DAL.Models;
 using Swen3.API.DAL.Repositories;
+using Swen3.API.Messaging;
+using System.Text;
 
 namespace Swen3.API.Controllers
 {
@@ -13,11 +16,13 @@ namespace Swen3.API.Controllers
     {
         private readonly DocumentRepository _repo;
         private readonly IMapper _mapper;
+        private readonly IMessagePublisher _publisher;
 
-        public DocumentsController(DocumentRepository repo, IMapper mapper)
+        public DocumentsController(DocumentRepository repo, IMapper mapper, IMessagePublisher publisher)
         {
             _repo = repo;
             _mapper = mapper;
+            _publisher = publisher;
         }
 
         [HttpGet]
@@ -46,6 +51,20 @@ namespace Swen3.API.Controllers
             await _repo.AddAsync(doc);
             
             var createdDto = _mapper.Map<DocumentDto>(doc);
+
+            var message = new DocumentUploadedMessage(
+                    DocumentId: doc.Id,
+                    FileName: doc.FileName,
+                    ContentType: doc.MimeType,
+                    UploadedAtUtc: DateTime.UtcNow,
+                    StoragePath: "",
+                    CorrelationId: Guid.NewGuid().ToString(),
+                    TenantId: null,
+                    Version: 1
+                );
+
+            await _publisher.PublishDocumentUploadedAsync(message);
+
             return CreatedAtAction(nameof(GetById), new { id = doc.Id }, createdDto);
         }
 
