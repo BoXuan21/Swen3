@@ -4,6 +4,6 @@ namespace Swen3.API.Messaging
 {
     public interface IRabbitMqService
     {
-        Task<IConnection> CreateChannel();
+        Task<IChannel> GetChannelAsync();
     }
 }

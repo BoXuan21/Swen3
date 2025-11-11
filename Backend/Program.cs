@@ -1,9 +1,7 @@
 
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
-using RabbitMQ.Client;
+using Microsoft.Extensions.Logging;
 using Swen3.API.DAL;
-using Swen3.API.DAL.Mapping;
 using Swen3.API.Messaging;
 
 namespace Backend
@@ -14,19 +12,17 @@ namespace Backend
         {
             var builder = WebApplication.CreateBuilder(args);
             builder.Services.AddSwenDal(builder.Configuration);
+            builder.Logging.ClearProviders();
+            builder.Logging.AddConsole();
+            builder.Logging.AddDebug();
 
-            // Added AutoMapper
-            // Replace this line:
-            // builder.Services.AddSingleton(sp => sp.GetRequiredKeyedService<IOptions<RabbitMqConfiguration>>().Value);
-
-            // With this line:
             builder.Services.AddAutoMapper(typeof(Program));
             
             // Add RabbitMq
-            builder.Services.Configure<RabbitMqConfiguration>(builder.Configuration.GetSection("RabbitMq"));
+            builder.Services.Configure<RabbitMqConfiguration>(builder.Configuration.GetSection("Messaging"));
             builder.Services.AddSingleton(sp => sp.GetRequiredService<IOptions<RabbitMqConfiguration>>().Value);
-
             builder.Services.AddSingleton<IRabbitMqService, RabbitMqService>();
+            builder.Services.AddSingleton<IMessagePublisher, RabbitMqPublisher>();
 
             builder.Services.AddControllers();
             builder.Services.AddEndpointsApiExplorer();
