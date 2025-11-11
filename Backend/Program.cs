@@ -3,6 +3,8 @@ using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Logging;
 using Swen3.API.DAL;
 using Swen3.API.Messaging;
+using Swen3.API.DAL.Mapping;
+using Swen3.API.Middleware;
 
 namespace Backend
 {
@@ -16,7 +18,7 @@ namespace Backend
             builder.Logging.AddConsole();
             builder.Logging.AddDebug();
 
-            builder.Services.AddAutoMapper(typeof(Program));
+            builder.Services.AddAutoMapper(typeof(DocumentProfile).Assembly);
             
             // Add RabbitMq
             builder.Services.Configure<RabbitMqConfiguration>(builder.Configuration.GetSection("Messaging"));
@@ -36,6 +38,9 @@ namespace Backend
                 app.UseSwagger();
                 app.UseSwaggerUI();
             }
+
+            // Register exception handling middleware (should be early in pipeline)
+            app.UseMiddleware<ExceptionHandlingMiddleware>();
 
             app.UseHttpsRedirection();
             app.UseAuthorization();

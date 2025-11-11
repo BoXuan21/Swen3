@@ -15,7 +15,7 @@ namespace Swen3.API.DAL
             services.AddDbContext<AppDbContext>(options =>
                 options.UseNpgsql(conn));
 
-            services.AddScoped<DocumentRepository>();
+            services.AddScoped<IDocumentRepository, DocumentRepository>();
 
             return services;
 
