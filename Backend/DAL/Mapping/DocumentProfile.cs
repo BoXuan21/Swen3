@@ -14,7 +14,8 @@ namespace Swen3.API.DAL.Mapping
             // DocumentDto -> Document (for creating new documents)
             CreateMap<DocumentDto, Document>()
                 .ForMember(dest => dest.Id, opt => opt.Ignore()) // Let EF generate the ID
-                .ForMember(dest => dest.UploadedAt, opt => opt.Ignore()); // Let EF set the timestamp
+                .ForMember(dest => dest.UploadedAt, opt => opt.Ignore()) // Let EF set the timestamp
+                .ForMember(dest => dest.StorageKey, opt => opt.Ignore());
         }
     }
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import styles from './page.module.css';
 
 interface Document {
@@ -10,25 +10,37 @@ interface Document {
   mimeType: string;
   size: number;
   uploadedAt: string;
+  storageKey: string;
 }
+
+const MAX_FILE_BYTES = 25 * 1024 * 1024; // 25 MB
+const MAX_FILE_MB = MAX_FILE_BYTES / (1024 * 1024);
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? '';
+
+const buildApiUrl = (path: string) => `${API_BASE}${path}`;
 
 export default function Dashboard() {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [newDocument, setNewDocument] = useState({
-    title: '',
-    fileName: '',
-    mimeType: ''
-  });
+  const [showUploadForm, setShowUploadForm] = useState(false);
+  const [title, setTitle] = useState('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadMessage, setUploadMessage] = useState<string | null>(null);
+  const [dragActive, setDragActive] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [previewDocId, setPreviewDocId] = useState<string | null>(null);
+
+  const documentsEndpoint = buildApiUrl('/api/Documents');
 
   // Fetch documents from API
   const fetchDocuments = async () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch('/api/Documents');
+      const response = await fetch(documentsEndpoint);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -41,34 +53,77 @@ export default function Dashboard() {
     }
   };
 
+  const resetUploadState = () => {
+    setTitle('');
+    setSelectedFile(null);
+    setUploadMessage(null);
+    setDragActive(false);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    setPreviewUrl(null);
+  };
+
   // Add new document
-  const addDocument = async () => {
+  const uploadDocument = async () => {
     try {
-      const response = await fetch('/api/Documents', {
+      setUploadMessage(null);
+      setError(null);
+
+      if (!title.trim()) {
+        throw new Error('Please provide a document title.');
+      }
+
+      if (!selectedFile) {
+        throw new Error('Please drop a PDF file.');
+      }
+
+      if (selectedFile.size > MAX_FILE_BYTES) {
+        throw new Error(`File exceeds ${MAX_FILE_MB} MB limit.`);
+      }
+
+      const formData = new FormData();
+      formData.append('title', title.trim());
+      formData.append('file', selectedFile);
+
+      setUploading(true);
+
+      const response = await fetch(documentsEndpoint, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(newDocument)
+        body: formData
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const message = await response.text();
+        throw new Error(message || `HTTP error! status: ${response.status}`);
       }
 
       const addedDoc = await response.json();
-      setDocuments([addedDoc, ...documents]);
-      setShowAddForm(false);
-      setNewDocument({ title: '', fileName: '', mimeType: '' });
+      setDocuments((prev) => [addedDoc, ...prev]);
+      resetUploadState();
+      setUploadMessage('Document uploaded successfully.');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to add document');
+      setError(err instanceof Error ? err.message : 'Failed to upload document');
+    } finally {
+      setUploading(false);
     }
   };
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
 
   // Delete document
   const deleteDocument = async (id: string) => {
     try {
-      const response = await fetch(`/api/Documents/${id}`, {
+      const response = await fetch(`${documentsEndpoint}/${id}`, {
         method: 'DELETE'
       });
 
@@ -85,6 +140,74 @@ export default function Dashboard() {
   useEffect(() => {
     fetchDocuments();
   }, []);
+
+  useEffect(() => {
+    if (showUploadForm) {
+      setUploadMessage(null);
+    }
+  }, [showUploadForm]);
+
+  const handleFileSelection = (file: File | null) => {
+    if (!file) return;
+
+    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+      setError('Only PDF files are supported.');
+      return;
+    }
+
+    if (file.size > MAX_FILE_BYTES) {
+      setError(`File exceeds ${MAX_FILE_MB} MB limit.`);
+      return;
+    }
+
+    setError(null);
+    setSelectedFile(file);
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    setPreviewUrl(URL.createObjectURL(file));
+  };
+
+  const onDrop = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setDragActive(false);
+    const file = event.dataTransfer.files?.[0];
+    handleFileSelection(file ?? null);
+  };
+
+  const fileSizeUsage = selectedFile ? (selectedFile.size / MAX_FILE_BYTES) * 100 : 0;
+
+  const handleDownload = async (id: string) => {
+    try {
+      const doc = documents.find(d => d.id === id);
+      const downloadUrl = buildApiUrl(`/api/Documents/${id}/content`);
+      
+      const response = await fetch(downloadUrl);
+      if (!response.ok) throw new Error('Download failed');
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = doc?.fileName || 'document.pdf';
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to download document');
+    }
+  };
+
+  const handlePreview = (id: string) => {
+    console.log('Opening preview for document:', id);
+    setPreviewDocId(id);
+  };
+
+  const closePreview = () => {
+    console.log('Closing preview');
+    setPreviewDocId(null);
+  };
 
   return (
     <div className={styles.root}>
@@ -114,7 +237,7 @@ export default function Dashboard() {
             🔄 Refresh
           </button>
           <button
-            onClick={() => setShowAddForm(!showAddForm)}
+            onClick={() => setShowUploadForm(!showUploadForm)}
             className={styles.buttonSuccess}
           >
             ➕ Add Document
@@ -129,46 +252,106 @@ export default function Dashboard() {
         )}
 
         {/* Add Document Form */}
-        {showAddForm && (
+        {showUploadForm && (
           <div className={styles.formContainer}>
-            <h3 className={styles.formTitle}>Add New Document</h3>
+            <h3 className={styles.formTitle}>Upload PDF (Max {MAX_FILE_MB} MB)</h3>
             <div className={styles.formGrid}>
               <input
                 type="text"
                 placeholder="Document Title"
-                value={newDocument.title}
-                onChange={(e) => setNewDocument({...newDocument, title: e.target.value})}
-                className={styles.input}
-              />
-              <input
-                type="text"
-                placeholder="File Name"
-                value={newDocument.fileName}
-                onChange={(e) => setNewDocument({...newDocument, fileName: e.target.value})}
-                className={styles.input}
-              />
-              <input
-                type="text"
-                placeholder="MIME Type (e.g., application/pdf)"
-                value={newDocument.mimeType}
-                onChange={(e) => setNewDocument({...newDocument, mimeType: e.target.value})}
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
                 className={styles.input}
               />
             </div>
-            <div className={styles.formActions}>
+
+            <div
+              className={`${styles.dropZone} ${dragActive ? styles.dropZoneActive : ''}`}
+              onDragOver={(e) => {
+                e.preventDefault();
+                setDragActive(true);
+              }}
+              onDragLeave={(e) => {
+                e.preventDefault();
+                setDragActive(false);
+              }}
+              onDrop={onDrop}
+              onClick={() => fileInputRef.current?.click()}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  fileInputRef.current?.click();
+                }
+              }}
+            >
+              <p className={styles.dropHint}>
+                Drag and drop your PDF here, or click to browse
+              </p>
+              <p className={styles.dropSubHint}>
+                Accepted format: PDF · Maximum size {MAX_FILE_MB} MB
+              </p>
+              {selectedFile && (
+                <div className={styles.fileInfo}>
+                  <span>{selectedFile.name}</span>
+                  <span>{(selectedFile.size / (1024 * 1024)).toFixed(2)} MB</span>
+                </div>
+              )}
+
+              <div className={styles.sizeMeter}>
+                <div
+                  className={styles.sizeMeterFill}
+                  style={{ width: `${Math.min(fileSizeUsage, 100)}%` }}
+                />
+              </div>
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="application/pdf"
+              className={styles.hiddenInput}
+              onChange={(e) => handleFileSelection(e.target.files?.[0] ?? null)}
+            />
+
+            {previewUrl ? (
+              <div className={styles.previewContainer}>
+                <p className={styles.previewLabel}>Preview</p>
+                <iframe
+                  src={previewUrl}
+                  className={styles.previewFrame}
+                  title="PDF preview"
+                />
+              </div>
+            ) : (
+              <div className={styles.previewPlaceholder}>
+                Drop a PDF to see a preview.
+              </div>
+            )}
+
+              <div className={styles.formActions}>
               <button
-                onClick={addDocument}
+                onClick={uploadDocument}
                 className={styles.buttonPrimary}
+                disabled={uploading}
               >
-                Save Document
+                {uploading ? 'Uploading…' : 'Upload Document'}
               </button>
               <button
-                onClick={() => setShowAddForm(false)}
+                onClick={() => {
+                  setShowUploadForm(false);
+                  resetUploadState();
+                }}
                 className={styles.buttonSecondary}
+                disabled={uploading}
               >
                 Cancel
               </button>
             </div>
+
+            {uploadMessage && (
+              <div className={styles.successBox}>{uploadMessage}</div>
+            )}
           </div>
         )}
 
@@ -191,25 +374,61 @@ export default function Dashboard() {
                   <div>📁 {doc.fileName}</div>
                   <div>📅 {new Date(doc.uploadedAt).toLocaleDateString()}</div>
                   <div>🏷️ {doc.mimeType}</div>
+                  <div className={styles.sizePill}>
+                    {(doc.size / (1024 * 1024)).toFixed(2)} MB
+                  </div>
                 </div>
                 <div className={styles.actions}>
                   <button
-                    onClick={() => {
-                      alert(`Document Details:\n\nTitle: ${doc.title}\nFile: ${doc.fileName}\nType: ${doc.mimeType}\nUploaded: ${new Date(doc.uploadedAt).toLocaleString()}`);
-                    }}
-                    className={styles.btnView}
+                    onClick={() => handlePreview(doc.id)}
+                    className={styles.btnPreview}
                   >
-                    View Details
+                    👁️ Preview
+                  </button>
+                  <button
+                    onClick={() => handleDownload(doc.id)}
+                    className={styles.btnDownload}
+                  >
+                    ⬇️ Download
                   </button>
                   <button
                     onClick={() => deleteDocument(doc.id)}
                     className={styles.btnDelete}
                   >
-                    Delete
+                    🗑️ Delete
                   </button>
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Preview Modal */}
+        {previewDocId && (
+          <div className={styles.modalOverlay} onClick={closePreview}>
+            <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+              <div className={styles.modalHeader}>
+                <h2 className={styles.modalTitle}>
+                  {documents.find(d => d.id === previewDocId)?.title || 'Document Preview'}
+                </h2>
+                <div className={styles.modalActions}>
+                  <button 
+                    onClick={() => handleDownload(previewDocId)} 
+                    className={styles.modalDownloadBtn}
+                  >
+                    ⬇️ Download
+                  </button>
+                  <button onClick={closePreview} className={styles.closeButton}>
+                    ✕
+                  </button>
+                </div>
+              </div>
+              <iframe
+                src={buildApiUrl(`/api/Documents/${previewDocId}/content`)}
+                className={styles.modalFrame}
+                title="Document preview"
+              />
+            </div>
           </div>
         )}
       </div>

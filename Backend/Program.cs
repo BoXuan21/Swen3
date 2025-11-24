@@ -5,6 +5,7 @@ using Swen3.API.DAL;
 using Swen3.API.Messaging;
 using Swen3.API.DAL.Mapping;
 using Swen3.API.Middleware;
+using Swen3.API.Storage;
 
 namespace Backend
 {
@@ -19,6 +20,16 @@ namespace Backend
             builder.Logging.AddDebug();
 
             builder.Services.AddAutoMapper(typeof(DocumentProfile).Assembly);
+
+            builder.Services
+                .AddOptions<MinioOptions>()
+                .Bind(builder.Configuration.GetSection("Minio"))
+                .ValidateDataAnnotations()
+                .Validate(o => !string.IsNullOrWhiteSpace(o.Endpoint), "MinIO endpoint must be configured")
+                .Validate(o => !string.IsNullOrWhiteSpace(o.BucketName), "MinIO bucket name must be configured")
+                .ValidateOnStart();
+
+            builder.Services.AddSingleton<IDocumentStorageService, MinioDocumentStorageService>();
             
             // Add RabbitMq
             builder.Services.Configure<RabbitMqConfiguration>(builder.Configuration.GetSection("Messaging"));
