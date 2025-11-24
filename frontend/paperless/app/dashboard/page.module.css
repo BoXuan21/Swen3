@@ -84,6 +84,58 @@
   @apply bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors;
 }
 
+.successBox {
+  @apply mt-4 rounded border border-green-200 bg-green-50 px-4 py-3 text-green-700;
+}
+
+.dropZone {
+  @apply mt-4 flex flex-col gap-2 rounded-2xl border-2 border-dashed border-gray-300 bg-white p-6 text-center transition hover:border-blue-400;
+}
+
+.dropZoneActive {
+  @apply border-blue-500 bg-blue-50 shadow-inner;
+}
+
+.dropHint {
+  @apply text-lg font-semibold text-gray-700;
+}
+
+.dropSubHint {
+  @apply text-sm text-gray-500;
+}
+
+.fileInfo {
+  @apply mt-2 flex items-center justify-between rounded-lg bg-gray-100 px-3 py-2 text-sm text-gray-700;
+}
+
+.sizeMeter {
+  @apply mt-4 h-2 w-full rounded-full bg-gray-200;
+}
+
+.sizeMeterFill {
+  @apply h-full rounded-full bg-blue-500 transition-all;
+}
+
+.hiddenInput {
+  @apply hidden;
+}
+
+.previewContainer {
+  @apply mt-6;
+}
+
+.previewLabel {
+  @apply mb-2 text-sm font-semibold text-gray-600;
+}
+
+.previewFrame {
+  @apply h-64 w-full rounded-lg border border-gray-200 bg-white;
+}
+
+.previewPlaceholder {
+  @apply mt-6 rounded-lg border border-dashed border-gray-200 bg-gray-50 px-4 py-6 text-center text-sm text-gray-500;
+}
+
 .loading {
   @apply text-center py-12;
 }
@@ -128,12 +180,48 @@
   @apply mt-4 flex gap-2;
 }
 
-.btnView {
+.btnPreview {
+  @apply bg-purple-500 hover:bg-purple-600 text-white px-3 py-1 rounded text-sm transition-colors;
+}
+
+.btnDownload {
   @apply bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm transition-colors;
 }
 
 .btnDelete {
   @apply bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition-colors;
+}
+
+.modalOverlay {
+  @apply fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4;
+}
+
+.modalContent {
+  @apply relative w-full max-w-6xl h-[90vh] bg-white rounded-lg shadow-2xl flex flex-col;
+}
+
+.modalHeader {
+  @apply flex items-center justify-between border-b border-gray-200 p-4;
+}
+
+.modalTitle {
+  @apply text-xl font-semibold text-gray-800;
+}
+
+.modalActions {
+  @apply flex items-center gap-3;
+}
+
+.modalDownloadBtn {
+  @apply bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors;
+}
+
+.closeButton {
+  @apply text-gray-500 hover:text-gray-700 text-2xl font-bold transition-colors px-2;
+}
+
+.modalFrame {
+  @apply flex-1 w-full rounded-b-lg;
 }
 
 
