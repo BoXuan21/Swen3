@@ -1,5 +1,6 @@
 ﻿
 using RabbitMQ.Client;
+using Swen3.Shared.Messaging;
 using System.Text;
 using System.Text.Json;
 

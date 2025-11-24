@@ -6,6 +6,7 @@ using Swen3.API.DAL.DTOs;
 using Swen3.API.DAL.Interfaces;
 using Swen3.API.DAL.Models;
 using Swen3.API.Messaging;
+using Swen3.Shared.Messaging;
 
 namespace Swen3.API.Controllers
 {

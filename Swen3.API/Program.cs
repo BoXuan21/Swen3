@@ -6,7 +6,7 @@ using Swen3.API.Messaging;
 using Swen3.API.DAL.Mapping;
 using Swen3.API.Middleware;
 
-namespace Backend
+namespace Swen3.API
 {
     public class Program
     {

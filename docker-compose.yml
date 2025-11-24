@@ -14,8 +14,8 @@ services:
 
   api:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: Swen3.API/Dockerfile
     container_name: swen3-api
     ports:
       - "8080:8080"
@@ -78,6 +78,15 @@ services:
     depends_on:
       - frontend
       - api
+    restart: unless-stopped
+
+  ocrworker:
+    build:
+      context: .
+      dockerfile: Swen3.Services/Dockerfile
+    container_name: swen3-ocrworker
+    depends_on:
+      - rabbitmq
     restart: unless-stopped
 
 volumes:

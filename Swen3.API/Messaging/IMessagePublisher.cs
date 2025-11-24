@@ -1,4 +1,6 @@
-﻿namespace Swen3.API.Messaging
+﻿using Swen3.Shared.Messaging;
+
+namespace Swen3.API.Messaging
 {
     public interface IMessagePublisher
     {
