@@ -59,7 +59,7 @@ services:
 
   frontend:
     build:
-      context: ./frontend/paperless
+      context: ./Swen3.Frontend/paperless
       dockerfile: Dockerfile
     container_name: swen3-frontend
     environment:
