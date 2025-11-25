@@ -10,6 +10,7 @@ interface Document {
   mimeType: string;
   size: number;
   uploadedAt: string;
+  metadata: string;
 }
 
 export default function Dashboard() {
@@ -20,7 +21,8 @@ export default function Dashboard() {
   const [newDocument, setNewDocument] = useState({
     title: '',
     fileName: '',
-    mimeType: ''
+    mimeType: '',
+    metadata: ''
   });
 
   // Fetch documents from API
@@ -59,7 +61,7 @@ export default function Dashboard() {
       const addedDoc = await response.json();
       setDocuments([addedDoc, ...documents]);
       setShowAddForm(false);
-      setNewDocument({ title: '', fileName: '', mimeType: '' });
+      setNewDocument({ title: '', fileName: '', mimeType: '', metadata: '' });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to add document');
     }

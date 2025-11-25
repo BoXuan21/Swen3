@@ -8,6 +8,6 @@
         public string MimeType { get; set; } = null!;
         public long Size { get; set; }
         public DateTime UploadedAt { get; set; } = DateTime.UtcNow;
-        public string Metadata { get; set; } = null!;
+        public string Metadata { get; set; } = "";
     }
 }
