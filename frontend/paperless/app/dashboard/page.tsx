@@ -377,14 +377,6 @@ export default function Dashboard() {
                   <div className={styles.sizePill}>
                     {(doc.size / (1024 * 1024)).toFixed(2)} MB
                   </div>
-                </div>
-                <div className={styles.actions}>
-                  <button
-                    onClick={() => handlePreview(doc.id)}
-                    className={styles.btnPreview}
-                  >
-                    👁️ Preview
-                  </button>
                   <button
                     onClick={() => handleDownload(doc.id)}
                     className={styles.btnDownload}
@@ -400,35 +392,6 @@ export default function Dashboard() {
                 </div>
               </div>
             ))}
-          </div>
-        )}
-
-        {/* Preview Modal */}
-        {previewDocId && (
-          <div className={styles.modalOverlay} onClick={closePreview}>
-            <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-              <div className={styles.modalHeader}>
-                <h2 className={styles.modalTitle}>
-                  {documents.find(d => d.id === previewDocId)?.title || 'Document Preview'}
-                </h2>
-                <div className={styles.modalActions}>
-                  <button 
-                    onClick={() => handleDownload(previewDocId)} 
-                    className={styles.modalDownloadBtn}
-                  >
-                    ⬇️ Download
-                  </button>
-                  <button onClick={closePreview} className={styles.closeButton}>
-                    ✕
-                  </button>
-                </div>
-              </div>
-              <iframe
-                src={buildApiUrl(`/api/Documents/${previewDocId}/content`)}
-                className={styles.modalFrame}
-                title="Document preview"
-              />
-            </div>
           </div>
         )}
       </div>
