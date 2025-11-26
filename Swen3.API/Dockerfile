@@ -5,6 +5,7 @@ WORKDIR /src
 # Copy the project file and restore dependencies
 COPY Swen3.API/Swen3.API.csproj Swen3.API/
 COPY Swen3.Shared/Swen3.Shared.csproj Swen3.Shared/
+COPY Swen3.Storage/Swen3.Storage.csproj Swen3.Storage/
 RUN dotnet restore "Swen3.API/Swen3.API.csproj"
 
 # Copy the rest of the source code

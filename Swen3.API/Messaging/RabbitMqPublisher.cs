@@ -66,7 +66,7 @@ namespace Swen3.API.Messaging
                 );
 
                 // Declare main queue with DLX configuration
-                var queueArgs = new Dictionary<string, object>
+                var queueArgs = new Dictionary<string, object?>
                 {
                     { "x-dead-letter-exchange", Topology.DeadLetterExchange },
                     { "x-dead-letter-routing-key", Topology.DeadLetterQueue }
@@ -118,7 +118,7 @@ namespace Swen3.API.Messaging
                     MessageId = Guid.NewGuid().ToString(),
                     CorrelationId = message.CorrelationId,
                     Timestamp = new AmqpTimestamp(DateTimeOffset.UtcNow.ToUnixTimeSeconds()),
-                    Headers = new Dictionary<string, object>
+                    Headers = new Dictionary<string, object?>
                     {
                         { "message-type", nameof(DocumentUploadedMessage) },
                         { "version", message.Version }

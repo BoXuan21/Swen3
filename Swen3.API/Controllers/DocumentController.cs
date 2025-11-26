@@ -1,6 +1,5 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 using Swen3.API.Common.Exceptions;
 using Swen3.API.DAL.DTOs;
 using Swen3.API.DAL.Interfaces;
@@ -60,7 +59,7 @@ namespace Swen3.API.Controllers
         public async Task<IActionResult> Create([FromForm] CreateDocumentRequest request, CancellationToken cancellationToken)
         {
             _logger.LogInformation("POST /api/documents - Creating new document");
-            
+
             if (request == null)
             {
                 _logger.LogWarning("Create document request received with null body");
@@ -102,7 +101,7 @@ namespace Swen3.API.Controllers
             };
 
             await _repo.AddAsync(doc);
-            
+
             _logger.LogInformation("Successfully created document with id: {DocumentId}", doc.Id);
             var createdDto = _mapper.Map<DocumentDto>(doc);
 

@@ -1,11 +1,10 @@
 using Swen3.Shared.Messaging;
 using Microsoft.Extensions.Options;
-using Microsoft.Extensions.Logging;
 using Swen3.API.DAL;
 using Swen3.API.Messaging;
 using Swen3.API.DAL.Mapping;
 using Swen3.API.Middleware;
-using Swen3.API.Storage;
+using Swen3.Storage.MiniIo;
 
 namespace Swen3.API
 {
@@ -21,7 +20,16 @@ namespace Swen3.API
 
             builder.Services.AddAutoMapper(typeof(DocumentProfile).Assembly);
 
-            
+            builder.Services
+                .AddOptions<MinioOptions>()
+                .Bind(builder.Configuration.GetSection("Minio"))
+                .ValidateDataAnnotations()
+                .Validate(o => !string.IsNullOrWhiteSpace(o.Endpoint), "MinIO endpoint must be configured")
+                .Validate(o => !string.IsNullOrWhiteSpace(o.BucketName), "MinIO bucket name must be configured")
+                .ValidateOnStart();
+
+            builder.Services.AddSingleton<IDocumentStorageService, MinioDocumentStorageService>();
+
             // Add RabbitMq
             builder.Services.Configure<RabbitMqConfiguration>(builder.Configuration.GetSection("Messaging"));
             builder.Services.AddSingleton(sp => sp.GetRequiredService<IOptions<RabbitMqConfiguration>>().Value);

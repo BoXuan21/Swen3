@@ -9,7 +9,6 @@
   <ItemGroup>
     <PackageReference Include="AutoMapper" Version="12.0.1" />
     <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="12.0.1" />
-    <PackageReference Include="Minio" Version="6.0.2" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.19" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.9" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.9">
@@ -30,6 +29,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Swen3.Shared\Swen3.Shared.csproj" />
+    <ProjectReference Include="..\Swen3.Storage\Swen3.Storage.csproj" />
   </ItemGroup>
 
 </Project>

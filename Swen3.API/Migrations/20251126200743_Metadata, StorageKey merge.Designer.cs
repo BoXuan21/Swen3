@@ -12,8 +12,8 @@ using Swen3.API.DAL;
 namespace Swen3.API.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251125154650_Metadata fix2")]
-    partial class Metadatafix2
+    [Migration("20251126200743_Metadata, StorageKey merge")]
+    partial class MetadataStorageKeymerge
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -45,6 +45,10 @@ namespace Swen3.API.Migrations
 
                     b.Property<long>("Size")
                         .HasColumnType("bigint");
+
+                    b.Property<string>("StorageKey")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<string>("Title")
                         .IsRequired()
