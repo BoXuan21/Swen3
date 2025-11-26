@@ -9,5 +9,6 @@
         public long Size { get; set; }
         public DateTime UploadedAt { get; set; } = DateTime.UtcNow;
         public string Metadata { get; set; } = "";
+        public string StorageKey { get; set; } = null!;
     }
 }

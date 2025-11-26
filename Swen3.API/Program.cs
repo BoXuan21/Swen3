@@ -5,6 +5,7 @@ using Swen3.API.DAL;
 using Swen3.API.Messaging;
 using Swen3.API.DAL.Mapping;
 using Swen3.API.Middleware;
+using Swen3.API.Storage;
 
 namespace Swen3.API
 {
@@ -19,6 +20,7 @@ namespace Swen3.API
             builder.Logging.AddDebug();
 
             builder.Services.AddAutoMapper(typeof(DocumentProfile).Assembly);
+
             
             // Add RabbitMq
             builder.Services.Configure<RabbitMqConfiguration>(builder.Configuration.GetSection("Messaging"));
