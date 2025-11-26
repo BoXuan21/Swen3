@@ -1,8 +1,7 @@
-﻿namespace Swen3.API.Messaging
+﻿namespace Swen3.Shared.Messaging
 {
     public class RabbitMqConfiguration
     {
-
         public string HostName { get; set; } = "rabbitmq";
         public int Port { get; set; } = 5672;
         public string Username { get; set; } = "guest";

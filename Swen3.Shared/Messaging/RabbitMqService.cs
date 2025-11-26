@@ -1,8 +1,8 @@
-﻿using Microsoft.EntityFrameworkCore.Metadata;
-using Microsoft.Extensions.Options;
+﻿using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Logging;
 using RabbitMQ.Client;
 
-namespace Swen3.API.Messaging
+namespace Swen3.Shared.Messaging
 {
     public class RabbitMqService : IRabbitMqService, IDisposable
     {

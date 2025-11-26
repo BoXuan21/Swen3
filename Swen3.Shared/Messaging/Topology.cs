@@ -1,4 +1,4 @@
-namespace Swen3.API.Messaging
+namespace Swen3.Shared.Messaging
 {
     public static class Topology
     {

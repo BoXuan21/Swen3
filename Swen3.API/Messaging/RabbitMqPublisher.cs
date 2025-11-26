@@ -1,5 +1,4 @@
-﻿
-using RabbitMQ.Client;
+﻿using RabbitMQ.Client;
 using Swen3.Shared.Messaging;
 using System.Text;
 using System.Text.Json;
@@ -104,17 +103,14 @@ namespace Swen3.API.Messaging
             {
                 var channel = await _rabbitMq.GetChannelAsync();
 
-                // Ensure topology exists
                 await EnsureTopologyAsync(channel);
 
-                // Serialize message to JSON
                 var json = JsonSerializer.Serialize(message, new JsonSerializerOptions
                 {
                     PropertyNamingPolicy = JsonNamingPolicy.CamelCase
                 });
                 var body = Encoding.UTF8.GetBytes(json);
 
-                // Create message properties
                 var properties = new BasicProperties
                 {
                     Persistent = true,
@@ -129,13 +125,11 @@ namespace Swen3.API.Messaging
                     }
                 };
 
-                // Add tenant header if present
                 if (!string.IsNullOrEmpty(message.TenantId))
                 {
                     properties.Headers["tenant-id"] = message.TenantId;
                 }
 
-                // Publish to exchange
                 await channel.BasicPublishAsync(
                     exchange: Topology.Exchange,
                     routingKey: Topology.RoutingKey,

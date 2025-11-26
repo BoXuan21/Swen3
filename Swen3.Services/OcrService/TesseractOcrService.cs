@@ -9,7 +9,14 @@ namespace Swen3.Services.OcrService
         public TesseractOcrService(ILogger<TesseractOcrService> logger)
         {
             _logger = logger;
+            _logger.LogInformation("OcrService initialized!");
         }
+
+        private void UpdateMetadataDb()
+        {
+
+        }
+
         public Task ProcessDocumentForOcrAsync(DocumentUploadedMessage message, CancellationToken cancellationToken)
         {
             _logger.LogInformation("Processing document {DocumentId} for OCR", message.DocumentId);
