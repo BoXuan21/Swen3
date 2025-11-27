@@ -58,9 +58,12 @@ services:
       - Minio__BucketName=documents
       - Minio__UseSsl=false
     depends_on:
-      - db
-      - rabbitmq
-      - minio
+      db:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
     restart: unless-stopped
 
   rabbitmq:
@@ -111,8 +114,17 @@ services:
       context: .
       dockerfile: Swen3.Services/Dockerfile
     container_name: swen3-ocrworker
+    environment:
+      - Minio__Endpoint=minio:9000
+      - Minio__AccessKey=minioadmin
+      - Minio__SecretKey=minioadmin
+      - Minio__BucketName=documents
+      - Minio__UseSsl=false
     depends_on:
-      - rabbitmq
+      rabbitmq:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
     restart: unless-stopped
 
 volumes:

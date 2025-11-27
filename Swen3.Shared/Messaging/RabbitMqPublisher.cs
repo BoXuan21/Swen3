@@ -1,26 +1,24 @@
 ﻿using RabbitMQ.Client;
-using Swen3.Shared.Messaging;
 using System.Text;
+using Microsoft.Extensions.Logging;
 using System.Text.Json;
 
-namespace Swen3.API.Messaging
+namespace Swen3.Shared.Messaging
 {
     public class RabbitMqPublisher : IMessagePublisher
     {
         private readonly IRabbitMqService _rabbitMq;
         private readonly ILogger<RabbitMqPublisher> _logger;
-        private readonly RabbitMqConfiguration _config;
         private bool _topologyInitialized;
 
-        public RabbitMqPublisher(IRabbitMqService rabbitMq, RabbitMqConfiguration config, ILogger<RabbitMqPublisher> logger)
+        public RabbitMqPublisher(IRabbitMqService rabbitMq, ILogger<RabbitMqPublisher> logger)
         {
             _rabbitMq = rabbitMq;
-            _config = config;
             _logger = logger;
             _logger.LogInformation("RabbitMqPublisher initialized");
         }
 
-        private async Task EnsureTopologyAsync(IChannel channel)
+        /*private async Task EnsureTopologyAsync(IChannel channel)
         {
             if (_topologyInitialized)
             {
@@ -94,21 +92,22 @@ namespace Swen3.API.Messaging
                 _logger.LogError(ex, "Error in ensure topology");
                 throw;
             }
-        }
+        }*/
 
-        public async Task PublishDocumentUploadedAsync(DocumentUploadedMessage message)
+        public async Task PublishDocumentUploadedAsync(DocumentUploadedMessage message, string exchange, string routingKey)
         {
             _logger.LogInformation("PublishDocumentUploadedAsync called for document {DocumentId}", message.DocumentId);
             try
             {
                 var channel = await _rabbitMq.GetChannelAsync();
 
-                await EnsureTopologyAsync(channel);
+                //await EnsureTopologyAsync(channel);
 
                 var json = JsonSerializer.Serialize(message, new JsonSerializerOptions
                 {
                     PropertyNamingPolicy = JsonNamingPolicy.CamelCase
                 });
+
                 var body = Encoding.UTF8.GetBytes(json);
 
                 var properties = new BasicProperties
@@ -131,8 +130,8 @@ namespace Swen3.API.Messaging
                 }
 
                 await channel.BasicPublishAsync(
-                    exchange: Topology.Exchange,
-                    routingKey: Topology.RoutingKey,
+                    exchange: exchange,
+                    routingKey: routingKey,
                     mandatory: false,
                     basicProperties: properties,
                     body: body

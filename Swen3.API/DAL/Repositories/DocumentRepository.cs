@@ -1,7 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using Swen3.API.Common.Exceptions;
-using Swen3.API.DAL;
 using Swen3.API.DAL.Interfaces;
 using Swen3.API.DAL.Models;
 

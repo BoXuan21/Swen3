@@ -3,18 +3,18 @@ using RabbitMQ.Client;
 using System.Text;
 using System.Text.Json;
 using Swen3.Shared.Messaging;
-using Swen3.Shared.OcrService;
+using Swen3.API.DAL.Interfaces;
 
-namespace Swen3.Services.Messaging
+namespace Swen3.API.Messaging
 {
-    public class RabbitMqConsumer : BackgroundService
+    public class ResultConsumer : BackgroundService
     {
-        private readonly ILogger<RabbitMqConsumer> _logger;
+        private readonly ILogger<ResultConsumer> _logger;
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly IRabbitMqService _rabbitMq;
         private bool _topologyInitialized;
 
-        public RabbitMqConsumer(ILogger<RabbitMqConsumer> logger, IServiceScopeFactory scopeFactory, IRabbitMqService rabbitMqService)
+        public ResultConsumer(ILogger<ResultConsumer> logger, IServiceScopeFactory scopeFactory, IRabbitMqService rabbitMqService)
         {
             _logger = logger;
             _scopeFactory = scopeFactory;
@@ -37,7 +37,7 @@ namespace Swen3.Services.Messaging
 
                 // Declare dead letter exchange
                 await channel.ExchangeDeclareAsync(
-                    exchange: Topology.DeadLetterExchange,
+                    exchange: Topology.ResultDLX,
                     type: ExchangeType.Direct,
                     durable: true,
                     autoDelete: false
@@ -45,7 +45,7 @@ namespace Swen3.Services.Messaging
 
                 // Declare dead letter queue
                 await channel.QueueDeclareAsync(
-                    queue: Topology.DeadLetterQueue,
+                    queue: Topology.ResultDLQ,
                     durable: true,
                     exclusive: false,
                     autoDelete: false,
@@ -54,14 +54,14 @@ namespace Swen3.Services.Messaging
 
                 // Bind DLQ to DLX
                 await channel.QueueBindAsync(
-                    queue: Topology.DeadLetterQueue,
-                    exchange: Topology.DeadLetterExchange,
-                    routingKey: Topology.DeadLetterQueue
+                    queue: Topology.ResultDLQ,
+                    exchange: Topology.ResultDLX,
+                    routingKey: Topology.ResultDLQ
                 );
 
                 // Declare main exchange
                 await channel.ExchangeDeclareAsync(
-                    exchange: Topology.Exchange,
+                    exchange: Topology.ResultExchange,
                     type: ExchangeType.Topic,
                     durable: true,
                     autoDelete: false
@@ -70,12 +70,12 @@ namespace Swen3.Services.Messaging
                 // Declare main queue with DLX configuration
                 var queueArgs = new Dictionary<string, object?>
                 {
-                    { "x-dead-letter-exchange", Topology.DeadLetterExchange },
-                    { "x-dead-letter-routing-key", Topology.DeadLetterQueue }
+                    { "x-dead-letter-exchange", Topology.ResultDLX },
+                    { "x-dead-letter-routing-key", Topology.ResultDLQ }
                 };
 
                 await channel.QueueDeclareAsync(
-                    queue: Topology.Queue,
+                    queue: Topology.ResultQueue,
                     durable: true,
                     exclusive: false,
                     autoDelete: false,
@@ -84,9 +84,9 @@ namespace Swen3.Services.Messaging
 
                 // Bind main queue to exchange
                 await channel.QueueBindAsync(
-                    queue: Topology.Queue,
-                    exchange: Topology.Exchange,
-                    routingKey: Topology.RoutingKey
+                    queue: Topology.ResultQueue,
+                    exchange: Topology.ResultExchange,
+                    routingKey: Topology.ResultRoutingKey
                 );
 
                 _topologyInitialized = true;
@@ -115,13 +115,29 @@ namespace Swen3.Services.Messaging
                 var message = Encoding.UTF8.GetString(body);
 
                 using var scope = _scopeFactory.CreateScope();
-                var ocrService = scope.ServiceProvider.GetRequiredService<IOcrService>();
-
+                var resultHandler = scope.ServiceProvider.GetRequiredService<IDocumentRepository>();
                 try
                 {
-                    var payload = JsonSerializer.Deserialize<DocumentUploadedMessage>(message);
+                    var options = new JsonSerializerOptions
+                    {
+                        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                    };
 
-                    await ocrService.ProcessDocumentForOcrAsync(payload, stoppingToken);
+                    var payload = JsonSerializer.Deserialize<DocumentUploadedMessage>(message, options);
+
+                    if (payload == null)
+                    {
+                        _logger.LogError("Result message is empty!");
+                        throw new NullReferenceException("Empty result message");
+                    }
+
+                    var document = await resultHandler.GetByIdAsync(payload.DocumentId);
+                    _logger.LogInformation("Document from repo: {Document}", document);
+                    document.Metadata = payload.Metadata;
+
+                    await resultHandler.UpdateAsync(document);
+
+                    _logger.LogInformation("Updated document's metadata!");
 
                     await channel.BasicAckAsync(deliveryTag: ea.DeliveryTag, multiple: false);
                 }
@@ -132,8 +148,8 @@ namespace Swen3.Services.Messaging
                 }
             };
 
-            await channel.BasicConsumeAsync(queue: Topology.Queue, autoAck: false, consumer: consumer);
-            _logger.LogInformation("Consumer is now listening on queue: {Queue}", Topology.Queue);
+            await channel.BasicConsumeAsync(queue: Topology.ResultQueue, autoAck: false, consumer: consumer);
+            _logger.LogInformation("Consumer is now listening on queue: {Queue}", Topology.ResultQueue);
 
             await Task.Delay(Timeout.Infinite, stoppingToken);
         }

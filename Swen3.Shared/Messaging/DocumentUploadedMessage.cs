@@ -7,6 +7,7 @@ namespace Swen3.Shared.Messaging
         string ContentType,
         DateTime UploadedAtUtc,
         string StoragePath,
+        string Metadata,
         string CorrelationId,
         string? TenantId,
         int Version

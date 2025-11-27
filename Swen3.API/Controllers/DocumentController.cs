@@ -4,7 +4,6 @@ using Swen3.API.Common.Exceptions;
 using Swen3.API.DAL.DTOs;
 using Swen3.API.DAL.Interfaces;
 using Swen3.API.DAL.Models;
-using Swen3.API.Messaging;
 using Swen3.Shared.Messaging;
 using Swen3.Storage.MiniIo;
 
@@ -53,7 +52,6 @@ namespace Swen3.API.Controllers
             return Ok(documentDto);
         }
 
-        [HttpPost]
         [Consumes("multipart/form-data")]
         [RequestSizeLimit(25 * 1024 * 1024)] // 25 MB PDFs by default
         public async Task<IActionResult> Create([FromForm] CreateDocumentRequest request, CancellationToken cancellationToken)
@@ -111,12 +109,14 @@ namespace Swen3.API.Controllers
                     ContentType: doc.MimeType,
                     UploadedAtUtc: DateTime.UtcNow,
                     StoragePath: doc.StorageKey,
+                    Metadata: "",
                     CorrelationId: Guid.NewGuid().ToString(),
                     TenantId: null,
                     Version: 1
-                );
+            );
+            _logger.LogInformation("Message created: {Message}", message);
 
-            await _publisher.PublishDocumentUploadedAsync(message);
+            await _publisher.PublishDocumentUploadedAsync(message, Topology.Exchange, Topology.RoutingKey);
 
             return CreatedAtAction(nameof(GetById), new { id = doc.Id }, createdDto);
         }

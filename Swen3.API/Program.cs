@@ -1,10 +1,10 @@
 using Swen3.Shared.Messaging;
 using Microsoft.Extensions.Options;
 using Swen3.API.DAL;
-using Swen3.API.Messaging;
 using Swen3.API.DAL.Mapping;
 using Swen3.API.Middleware;
 using Swen3.Storage.MiniIo;
+using Swen3.API.Messaging;
 
 namespace Swen3.API
 {
@@ -36,20 +36,19 @@ namespace Swen3.API
             builder.Services.AddSingleton<IRabbitMqService, RabbitMqService>();
             builder.Services.AddSingleton<IMessagePublisher, RabbitMqPublisher>();
 
+            builder.Services.AddHostedService<ResultConsumer>();
             builder.Services.AddControllers();
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
             var app = builder.Build();
 
-            // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
                 app.UseSwaggerUI();
             }
 
-            // Register exception handling middleware (should be early in pipeline)
             app.UseMiddleware<ExceptionHandlingMiddleware>();
 
             app.UseHttpsRedirection();
