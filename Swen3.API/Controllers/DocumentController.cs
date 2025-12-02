@@ -53,7 +53,7 @@ namespace Swen3.API.Controllers
         }
 
         [Consumes("multipart/form-data")]
-        [RequestSizeLimit(25 * 1024 * 1024)] // 25 MB PDFs by default
+        [RequestSizeLimit(25 * 1024 * 1024)] // 25 MB PDFs 
         public async Task<IActionResult> Create([FromForm] CreateDocumentRequest request, CancellationToken cancellationToken)
         {
             _logger.LogInformation("POST /api/documents - Creating new document");
@@ -136,11 +136,24 @@ namespace Swen3.API.Controllers
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(Guid id)
+        public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
         {
             _logger.LogInformation("DELETE /api/documents/{DocumentId} - Deleting document", id);
+            
+            // Get document to retrieve storage key
+            var document = await _repo.GetByIdAsync(id);
+            if (document == null)
+            {
+                throw new NotFoundException("Document", id);
+            }
+
+            // Delete from MinIO first
+            await _storage.DeleteAsync(document.StorageKey, cancellationToken);
+            
+            // Then delete from database
             await _repo.DeleteAsync(id);
-            _logger.LogInformation("Successfully deleted document with id: {DocumentId}", id);
+            
+            _logger.LogInformation("Successfully deleted document with id: {DocumentId} from both storage and database", id);
             return NoContent();
         }
     }

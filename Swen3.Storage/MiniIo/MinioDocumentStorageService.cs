@@ -9,14 +9,14 @@ namespace Swen3.Storage.MiniIo;
 public class MinioDocumentStorageService : IDocumentStorageService
 {
     private const int MaxUploadRetries = 3;
-    private const int MaxDownloadRetries = 3;
+    private const int MaxDownloadRetries = 3; //retry logic for the upload and download operations
 
     private readonly ILogger<MinioDocumentStorageService> _logger;
     private readonly MinioOptions _options;
     private readonly IMinioClient _client;
     private readonly Regex _safeNameRegex = new(@"[^a-zA-Z0-9_\.-]", RegexOptions.Compiled);
 
-    public MinioDocumentStorageService(IOptions<MinioOptions> options, ILogger<MinioDocumentStorageService> logger)
+    public MinioDocumentStorageService(IOptions<MinioOptions> options, ILogger<MinioDocumentStorageService> logger) //storing enviroment variables in the MinioOptions class
     {
         _logger = logger;
         _options = options.Value;
@@ -34,7 +34,7 @@ public class MinioDocumentStorageService : IDocumentStorageService
             throw new InvalidOperationException("MinIO credentials must be supplied via environment variables.");
         }
 
-        var client = new MinioClient()
+        var client = new MinioClient() //tls encryption for the connection
             .WithEndpoint(_options.Endpoint)
             .WithCredentials(accessKey, secretKey);
 
@@ -46,7 +46,7 @@ public class MinioDocumentStorageService : IDocumentStorageService
         _client = client.Build();
     }
 
-    public async Task<StorageObjectInfo> UploadPdfAsync(Stream content, long size, string originalFileName, string contentType, CancellationToken cancellationToken)
+    public async Task<StorageObjectInfo> UploadPdfAsync(Stream content, long size, string originalFileName, string contentType, CancellationToken cancellationToken) //pdf validation
     {
         if (!IsPdf(contentType, originalFileName))
         {
@@ -58,7 +58,7 @@ public class MinioDocumentStorageService : IDocumentStorageService
 
         await EnsureBucketExistsAsync(cancellationToken);
 
-        await ExecuteWithRetryAsync(
+        await ExecuteWithRetryAsync( //retry logic for the upload operations
             MaxUploadRetries,
             async () =>
             {
@@ -83,7 +83,7 @@ public class MinioDocumentStorageService : IDocumentStorageService
         return new StorageObjectInfo(objectKey, safeFileName, "application/pdf", size);
     }
 
-    public async Task<Stream> DownloadAsync(string objectKey, CancellationToken cancellationToken)
+    public async Task<Stream> DownloadAsync(string objectKey, CancellationToken cancellationToken) //retrieving the object from the bucket
     {
         await EnsureBucketExistsAsync(cancellationToken);
         var buffer = new MemoryStream();
@@ -109,7 +109,26 @@ public class MinioDocumentStorageService : IDocumentStorageService
         return buffer;
     }
 
-    private async Task EnsureBucketExistsAsync(CancellationToken cancellationToken)
+    public async Task DeleteAsync(string objectKey, CancellationToken cancellationToken)
+    {
+        await EnsureBucketExistsAsync(cancellationToken);
+
+        await ExecuteWithRetryAsync(
+            MaxDownloadRetries,
+            async () =>
+            {
+                var removeArgs = new RemoveObjectArgs()
+                    .WithBucket(_options.BucketName)
+                    .WithObject(objectKey);
+
+                await _client.RemoveObjectAsync(removeArgs, cancellationToken);
+            },
+            "delete");
+
+        _logger.LogInformation("Deleted object {ObjectKey} from bucket {Bucket}", objectKey, _options.BucketName);
+    }
+
+    private async Task EnsureBucketExistsAsync(CancellationToken cancellationToken) //bucket creation
     {
         var existsArgs = new BucketExistsArgs().WithBucket(_options.BucketName);
         var bucketExists = await _client.BucketExistsAsync(existsArgs, cancellationToken);
@@ -124,7 +143,7 @@ public class MinioDocumentStorageService : IDocumentStorageService
         await _client.MakeBucketAsync(createArgs, cancellationToken);
     }
 
-    private async Task ExecuteWithRetryAsync(int maxAttempts, Func<Task> operation, string operationName)
+    private async Task ExecuteWithRetryAsync(int maxAttempts, Func<Task> operation, string operationName) //retry logic for the upload and download operations
     {
         var delay = TimeSpan.FromMilliseconds(250);
 
@@ -154,14 +173,14 @@ public class MinioDocumentStorageService : IDocumentStorageService
         return isMimePdf && isExtensionPdf;
     }
 
-    private string SanitizeFileName(string fileName)
+    private string SanitizeFileName(string fileName) //How it works: Removes path traversal attacks, replaces unsafe characters with underscores, ensures .pdf extension.
     {
         var safeName = Path.GetFileName(string.IsNullOrWhiteSpace(fileName) ? "document.pdf" : fileName);
         safeName = _safeNameRegex.Replace(safeName, "_");
         return safeName.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase) ? safeName : $"{safeName}.pdf";
     }
 
-    private string BuildObjectKey(string safeFileName)
+    private string BuildObjectKey(string safeFileName) //unique key for the object in the bucket
     {
         var datePrefix = DateTime.UtcNow.ToString("yyyy/MM/dd");
         return $"{datePrefix}/{Guid.NewGuid():N}-{safeFileName}";
