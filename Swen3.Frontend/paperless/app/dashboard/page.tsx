@@ -391,6 +391,22 @@ export default function Dashboard() {
                     🗑️ Delete
                   </button>
                 </div>
+                
+                {/* Metadata / OCR Text Section */}
+                <div className={styles.metadataSection}>
+                  <div className={styles.metadataLabel}>
+                    📝 OCR Text (Erste Seite)
+                  </div>
+                  {doc.metadata && doc.metadata.trim() !== '' ? (
+                    <div className={styles.metadataContent}>
+                      {doc.metadata}
+                    </div>
+                  ) : (
+                    <div className={styles.metadataEmpty}>
+                      Kein OCR-Text verfügbar
+                    </div>
+                  )}
+                </div>
               </div>
             ))}
           </div>

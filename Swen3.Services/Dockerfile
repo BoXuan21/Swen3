@@ -22,12 +22,23 @@ RUN apt-get update && \
     libgdiplus && \
     rm -rf /var/lib/apt/lists/*
 
-RUN ln -s /usr/lib/x86_64-linux-gnu/libdl.so.2 /usr/lib/x86_64-linux-gnu/libdl.so
+# Multi-arch support: detect architecture and create appropriate symlinks
+RUN ARCH=$(dpkg --print-architecture) && \
+    if [ "$ARCH" = "amd64" ]; then \
+        LIB_PATH="/usr/lib/x86_64-linux-gnu"; \
+        ln -sf $LIB_PATH/libdl.so.2 $LIB_PATH/libdl.so 2>/dev/null || true; \
+    elif [ "$ARCH" = "arm64" ]; then \
+        LIB_PATH="/usr/lib/aarch64-linux-gnu"; \
+        # On ARM64 Bookworm, libdl is part of libc - create symlink for Tesseract.NET
+        ln -sf $LIB_PATH/libc.so.6 $LIB_PATH/libdl.so.2 2>/dev/null || true; \
+        ln -sf $LIB_PATH/libc.so.6 $LIB_PATH/libdl.so 2>/dev/null || true; \
+        ln -sf $LIB_PATH/libc.so.6 /app/libdl.so 2>/dev/null || true; \
+    fi && \
+    mkdir -p /app/x64 && \
+    ln -sf $LIB_PATH/liblept.so.5 /app/x64/libleptonica-1.82.0.so && \
+    ln -sf $LIB_PATH/libtesseract.so.5 /app/x64/libtesseract50.so
 
 WORKDIR /app/x64
-
-RUN ln -s /usr/lib/x86_64-linux-gnu/liblept.so.5 /app/x64/libleptonica-1.82.0.so
-RUN ln -s /usr/lib/x86_64-linux-gnu/libtesseract.so.5 /app/x64/libtesseract50.so
 
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 

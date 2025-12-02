@@ -1,0 +1,3 @@
+module.exports=[75785,(a,b,c)=>{let{createClientModuleProxy:d}=a.r(8622);a.n(d("[project]/frontend/paperless/node_modules/next/dist/client/components/builtin/global-error.js <module evaluation>"))},8055,(a,b,c)=>{let{createClientModuleProxy:d}=a.r(8622);a.n(d("[project]/frontend/paperless/node_modules/next/dist/client/components/builtin/global-error.js"))},93247,a=>{"use strict";a.i(75785);var b=a.i(8055);a.n(b)}];
+
+//# sourceMappingURL=f645a_next_dist_client_components_builtin_global-error_03b6e94c.js.map
