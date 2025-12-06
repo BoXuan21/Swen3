@@ -65,7 +65,7 @@ namespace Swen3.Services.OcrService
 
         }
 
-        private void ConvertPdfToTiffWithImageMagick(string inputPath, string outputPath)
+        protected virtual void ConvertPdfToTiffWithImageMagick(string inputPath, string outputPath)
         {
             string arguments = $"-density {ImageMagickDensity} \"{inputPath}[0]\" -compress Group4 \"{outputPath}\"";
 
@@ -100,7 +100,7 @@ namespace Swen3.Services.OcrService
             }
         }
 
-        private async Task DownloadAndSavePdf(string objectKey, string localPath, CancellationToken cancellationToken)
+        protected virtual async Task DownloadAndSavePdf(string objectKey, string localPath, CancellationToken cancellationToken)
         {
             if (objectKey == null || objectKey == "")
             {
@@ -115,7 +115,7 @@ namespace Swen3.Services.OcrService
             _logger.LogInformation("PDF downloaded from MinIO and saved to {Path}", localPath);
         }
 
-        private string RunOcrWithTesseract(string imagePath)
+        protected virtual string RunOcrWithTesseract(string imagePath)
         {
             using var pix = Tesseract.Pix.LoadFromFile(imagePath);
 
@@ -137,7 +137,7 @@ namespace Swen3.Services.OcrService
             return page.GetText();
         }
 
-        private void DeleteFileIfExists(string path)
+        protected virtual void DeleteFileIfExists(string path)
         {
             if (File.Exists(path))
             {

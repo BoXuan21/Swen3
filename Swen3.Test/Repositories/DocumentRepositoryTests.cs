@@ -5,7 +5,7 @@ using Swen3.API.DAL;
 using Swen3.API.DAL.Repositories;
 using Swen3.API.DAL.Models;
 
-namespace Swen3Tests.Repositories;
+namespace Swen3.Test.Repositories;
 
 [TestFixture]
 public class DocumentRepositoryTests
@@ -43,7 +43,8 @@ public class DocumentRepositoryTests
             Title = "Test Document",
             FileName = "test.pdf",
             MimeType = "application/pdf",
-            Size = 1024
+            Size = 1024,
+            StorageKey = ""
         };
         await _context.Documents.AddAsync(document);
         await _context.SaveChangesAsync();
@@ -76,7 +77,8 @@ public class DocumentRepositoryTests
             Title = "New Document",
             FileName = "new.pdf",
             MimeType = "application/pdf",
-            Size = 512
+            Size = 512,
+            StorageKey = ""
         };
 
         // Act
@@ -98,7 +100,8 @@ public class DocumentRepositoryTests
             Title = "To Delete",
             FileName = "delete.pdf",
             MimeType = "application/pdf",
-            Size = 512
+            Size = 512,
+            StorageKey = ""
         };
         await _context.Documents.AddAsync(document);
         await _context.SaveChangesAsync();
@@ -134,7 +137,8 @@ public class DocumentRepositoryTests
             Title = "Old Title",
             FileName = "file.pdf",
             MimeType = "application/pdf",
-            Size = 100
+            Size = 100,
+            StorageKey = ""
         };
         await _context.Documents.AddAsync(document);
         await _context.SaveChangesAsync();
