@@ -35,6 +35,7 @@ namespace Swen3.Services.OcrService
             _logger.LogInformation("Processing document {DocumentId} for OCR", message.DocumentId);
 
             var inputPdfPath = Path.Combine(Path.GetTempPath(), $"{message.DocumentId:N}_in.pdf");
+<<<<<<< Updated upstream
             var outputTiffPath = Path.Combine(Path.GetTempPath(), $"{message.DocumentId:N}_out.tiff");
 
             String textResult;
@@ -43,6 +44,32 @@ namespace Swen3.Services.OcrService
                 await DownloadAndSavePdf(message.StoragePath, inputPdfPath, cancellationToken);
                 ConvertPdfToTiffWithImageMagick(inputPdfPath, outputTiffPath);
                 textResult = RunOcrWithTesseract(outputTiffPath);
+=======
+
+            var outputTiffPrefix = Path.Combine(Path.GetTempPath(), $"{message.DocumentId:N}_out");
+            var outputTiffPattern = $"{outputTiffPrefix}*.tiff";
+
+            String textResult = "";
+            List<string> tiffFiles = new List<string>();
+
+            try
+            {
+                await DownloadAndSavePdf(message.StoragePath, inputPdfPath, cancellationToken);
+                ConvertPdfToTiffWithImageMagick(inputPdfPath, $"{outputTiffPrefix}.tiff");
+                tiffFiles = Directory.GetFiles(Path.GetTempPath(), $"{message.DocumentId:N}_out-*.tiff")
+                                    .OrderBy(f => f)
+                                    .ToList();
+                _logger.LogInformation("Number of pages: {Pages}", tiffFiles.Count());
+
+                foreach (var tiffPath in tiffFiles)
+                {
+                    _logger.LogInformation("Reading page " + tiffPath);
+                    textResult += RunOcrWithTesseract(tiffPath) + Environment.NewLine + "--- PAGE BREAK ---" + Environment.NewLine;
+                }
+
+                _logger.LogInformation("Finished reading document!");
+
+>>>>>>> Stashed changes
                 var updatedMessage = message with
                 {
                     Metadata = textResult
@@ -60,14 +87,27 @@ namespace Swen3.Services.OcrService
             finally
             {
                 DeleteFileIfExists(inputPdfPath);
+<<<<<<< Updated upstream
                 DeleteFileIfExists(outputTiffPath);
+=======
+                foreach (var tiffPath in tiffFiles)
+                {
+                    DeleteFileIfExists(tiffPath);
+                }
+>>>>>>> Stashed changes
             }
 
         }
 
         protected virtual void ConvertPdfToTiffWithImageMagick(string inputPath, string outputPath)
         {
+<<<<<<< Updated upstream
             string arguments = $"-density {ImageMagickDensity} \"{inputPath}[0]\" -compress Group4 \"{outputPath}\"";
+=======
+            string outputPathPattern = Path.ChangeExtension(outputPath, null) + "-%d" + Path.GetExtension(outputPath);
+
+            string arguments = $"-density {ImageMagickDensity} \"{inputPath}\" -compress Group4 \"{outputPathPattern}\"";
+>>>>>>> Stashed changes
 
             var startInfo = new ProcessStartInfo
             {
@@ -79,6 +119,11 @@ namespace Swen3.Services.OcrService
                 RedirectStandardError = true
             };
 
+<<<<<<< Updated upstream
+=======
+            _logger.LogInformation("Starting to convert PDF");
+
+>>>>>>> Stashed changes
             using var process = Process.Start(startInfo);
 
             if (process == null)
@@ -94,9 +139,16 @@ namespace Swen3.Services.OcrService
                 throw new InvalidOperationException($"ImageMagick failed (Exit Code {process.ExitCode}). Error: {error}");
             }
 
+<<<<<<< Updated upstream
             if (!File.Exists(outputPath))
             {
                 throw new FileNotFoundException($"ImageMagick finished but failed to create output file: {outputPath}");
+=======
+            string filePrefix = Path.ChangeExtension(outputPath, null);
+            if (Directory.GetFiles(Path.GetTempPath(), $"{Path.GetFileName(filePrefix)}-*.tiff").Length == 0)
+            {
+                throw new FileNotFoundException($"ImageMagick finished but failed to create any output files with prefix: {filePrefix}");
+>>>>>>> Stashed changes
             }
         }
 

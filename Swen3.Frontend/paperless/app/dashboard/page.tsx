@@ -391,11 +391,20 @@ export default function Dashboard() {
                     🗑️ Delete
                   </button>
                 </div>
+<<<<<<< Updated upstream:Swen3.Frontend/paperless/app/dashboard/page.tsx
+=======
+<<<<<<< Updated upstream:frontend/paperless/app/dashboard/page.tsx
+=======
+>>>>>>> Stashed changes:frontend/paperless/app/dashboard/page.tsx
                 
                 {/* Metadata / OCR Text Section */}
                 <div className={styles.metadataSection}>
                   <div className={styles.metadataLabel}>
+<<<<<<< Updated upstream:Swen3.Frontend/paperless/app/dashboard/page.tsx
                     📝 OCR Text (Erste Seite)
+=======
+                    📝 OCR Text 
+>>>>>>> Stashed changes:frontend/paperless/app/dashboard/page.tsx
                   </div>
                   {doc.metadata && doc.metadata.trim() !== '' ? (
                     <div className={styles.metadataContent}>
@@ -406,6 +415,34 @@ export default function Dashboard() {
                       Kein OCR-Text verfügbar
                     </div>
                   )}
+<<<<<<< Updated upstream:Swen3.Frontend/paperless/app/dashboard/page.tsx
+=======
+                </div>
+>>>>>>> Stashed changes:Swen3.Frontend/paperless/app/dashboard/page.tsx
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Preview Modal */}
+        {previewDocId && (
+          <div className={styles.modalOverlay} onClick={closePreview}>
+            <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+              <div className={styles.modalHeader}>
+                <h2 className={styles.modalTitle}>
+                  {documents.find(d => d.id === previewDocId)?.title || 'Document Preview'}
+                </h2>
+                <div className={styles.modalActions}>
+                  <button 
+                    onClick={() => handleDownload(previewDocId)} 
+                    className={styles.modalDownloadBtn}
+                  >
+                    ⬇️ Download
+                  </button>
+                  <button onClick={closePreview} className={styles.closeButton}>
+                    ✕
+                  </button>
+>>>>>>> Stashed changes:frontend/paperless/app/dashboard/page.tsx
                 </div>
               </div>
             ))}
