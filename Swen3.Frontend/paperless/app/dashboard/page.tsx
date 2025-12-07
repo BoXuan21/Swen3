@@ -395,7 +395,7 @@ export default function Dashboard() {
                 {/* Metadata / OCR Text Section */}
                 <div className={styles.metadataSection}>
                   <div className={styles.metadataLabel}>
-                    📝 OCR Text (Erste Seite)
+                    📝 OCR Text 
                   </div>
                   {doc.metadata && doc.metadata.trim() !== '' ? (
                     <div className={styles.metadataContent}>
