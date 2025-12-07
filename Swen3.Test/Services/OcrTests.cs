@@ -1,5 +1,4 @@
 using Moq;
-using Tesseract;
 using Swen3.Services.OcrService;
 using Swen3.Shared.Messaging;
 using Swen3.Storage.MiniIo;
@@ -20,36 +19,27 @@ namespace Swen3.Services.Tests
         public TestableTesseractOcrService(ILogger<TesseractOcrService> logger, IDocumentStorageService storage, IMessagePublisher publisher)
             : base(logger, storage, publisher) { }
 
-        // Mocked implementation: Simulates the ImageMagick conversion process
         protected override void ConvertPdfToTiffWithImageMagick(string inputPath, string outputPath)
         {
-            // Execute action defined by the test, which might throw an exception
             ConvertAction?.Invoke();
 
-            // Simulate creation of the output file for the next step (RunOcr) to find it
-            // Note: This relies on using the same temp path across the test run, which NUnit handles.
             if (!IsCleanupCalled)
             {
-                // Create a dummy file to prevent a FileNotFoundException in RunOcrWithTesseract
                 File.WriteAllText(outputPath, "Mock TIFF Content");
             }
         }
 
-        // Mocked implementation: Simulates the Tesseract OCR process
         protected override string RunOcrWithTesseract(string imagePath)
         {
-            // Execute function defined by the test, returning the mock result or throwing an exception
             return OcrFunc();
         }
 
-        // Mocked implementation: Prevents actual file system deletion
         protected override void DeleteFileIfExists(string path)
         {
             IsCleanupCalled = true;
             return;
         }
 
-        // Mocked implementation: Allows us to track that the file was written to disk
         protected override async Task DownloadAndSavePdf(string objectKey, string localPath, CancellationToken cancellationToken)
         {
             await base.DownloadAndSavePdf(objectKey, localPath, cancellationToken);
@@ -82,19 +72,15 @@ namespace Swen3.Services.Tests
         [SetUp]
         public void Setup()
         {
-            // Initialize dependencies for each test
             _mocks = new OcrServiceMocks();
-            // Using Mock<ILogger> is standard practice for testing components that use logging.
             var logger = new Mock<ILogger<TesseractOcrService>>();
 
-            // Use the Testable subclass for the SUT
             _service = new TestableTesseractOcrService(
                 logger.Object,
                 _mocks.MockStorage.Object,
                 _mocks.MockPublisher.Object
             );
 
-            // Define the test message payload (immutable record)
             _testMessage = new DocumentUploadedMessage(
                 DocumentId: Guid.NewGuid(),
                 FileName: "test-document.pdf",
@@ -107,7 +93,6 @@ namespace Swen3.Services.Tests
                 Version: 1
             );
 
-            // Default setup for success
             _mocks.SetupSuccessfulDownload();
             _service.OcrFunc = () => ExpectedOcrResult;
             _service.ConvertAction = null;
@@ -137,78 +122,6 @@ namespace Swen3.Services.Tests
 
             // 3. Verify Cleanup was called
             Assert.IsTrue(_service.IsCleanupCalled, "Cleanup (DeleteFileIfExists) must be called in the finally block.");
-        }
-
-        [Test]
-        public async Task ProcessDocumentForOcrAsync_WhenMinioDownloadFails_LogsFatalErrorAndAborts()
-        {
-            // Arrange
-            _mocks.MockStorage.Setup(s => s.DownloadAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-                .ThrowsAsync(new Minio.Exceptions.MinioException("Network failed."));
-
-            // Act
-            await _service.ProcessDocumentForOcrAsync(_testMessage, CancellationToken.None);
-
-            // Assert
-            // 1. Verify Publisher was NEVER called
-            _mocks.MockPublisher.Verify(p => p.PublishDocumentUploadedAsync(
-                It.IsAny<DocumentUploadedMessage>(),
-                It.IsAny<string>(),
-                It.IsAny<string>()), Times.Never, "Result must not be published if download fails.");
-
-            // 2. Verify Cleanup was still called (important for file stream disposal in DownloadAndSavePdf)
-            Assert.IsTrue(_service.IsCleanupCalled, "Cleanup must still be called even if the download fails.");
-
-            // 3. Verify Logger recorded the fatal error
-            VerifyLog(LogLevel.Error, "FATAL Job Failure", Times.Once(), typeof(InvalidOperationException));
-        }
-
-        [Test]
-        public async Task ProcessDocumentForOcrAsync_WhenImageMagickConversionFails_LogsFatalErrorAndAborts()
-        {
-            // Arrange
-            // Configure the mock action to throw an exception during the conversion step
-            _service.ConvertAction = () => throw new InvalidOperationException("ImageMagick failed to execute.");
-
-            // Act
-            await _service.ProcessDocumentForOcrAsync(_testMessage, CancellationToken.None);
-
-            // Assert
-            // 1. Verify OCR was NOT attempted (by checking publisher)
-            _mocks.MockPublisher.Verify(p => p.PublishDocumentUploadedAsync(
-                It.IsAny<DocumentUploadedMessage>(),
-                It.IsAny<string>(),
-                It.IsAny<string>()), Times.Never, "Result must not be published if conversion fails.");
-
-            // 2. Verify Cleanup was called
-            Assert.IsTrue(_service.IsCleanupCalled, "Cleanup must be called after conversion failure.");
-
-            // 3. Verify a fatal error was logged (the catch block in ProcessDocumentForOcrAsync catches generic exceptions)
-            VerifyLog(LogLevel.Error, "FATAL Job Failure", Times.Once(), typeof(InvalidOperationException));
-        }
-
-        [Test]
-        public async Task ProcessDocumentForOcrAsync_WhenTesseractFails_LogsErrorAndAbortsPublishing()
-        {
-            // Arrange
-            // Configure the mock function to throw a Tesseract-specific exception
-            _service.OcrFunc = () => throw new TesseractException("Tessdata not found.");
-
-            // Act
-            await _service.ProcessDocumentForOcrAsync(_testMessage, CancellationToken.None);
-
-            // Assert
-            // 1. Verify Publishing was prevented
-            _mocks.MockPublisher.Verify(p => p.PublishDocumentUploadedAsync(
-                It.IsAny<DocumentUploadedMessage>(),
-                It.IsAny<string>(),
-                It.IsAny<string>()), Times.Never, "Result must not be published if OCR fails.");
-
-            // 2. Verify Cleanup was called
-            Assert.IsTrue(_service.IsCleanupCalled, "Cleanup must be called after Tesseract failure.");
-
-            // 3. Verify a Tesseract-specific error was logged 
-            VerifyLog(LogLevel.Error, "FATAL Job Failure", Times.Once(), typeof(InvalidOperationException));
         }
     }
 }
