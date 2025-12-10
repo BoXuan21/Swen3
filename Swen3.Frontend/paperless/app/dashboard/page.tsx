@@ -167,7 +167,7 @@ export default function Dashboard() {
       }
 
       const result = await response.json();
-      setSummaryContent(result.summaryText || 'No summary available.');
+      setSummaryContent(result.candidates[0].content.parts[0].text || 'No summary available.');
 
     } catch (err) {
       setSummaryContent(`Error: ${err instanceof Error ? err.message : 'Failed to fetch summary'}`);

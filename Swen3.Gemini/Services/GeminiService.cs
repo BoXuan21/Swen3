@@ -13,7 +13,11 @@ namespace Swen3.Gemini.Services
             string systemPrompt = "Make a short summary for the text that you are given in 2-3 sentences.";
             var payload = new
             {
-                systemInstruction = systemPrompt,
+                systemInstruction = new
+                {
+                    role = "system",
+                    parts = new[] { new { text = systemPrompt } }
+                },
                 contents = new[]
                 {
                     new
