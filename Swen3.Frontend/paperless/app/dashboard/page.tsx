@@ -34,7 +34,13 @@ export default function Dashboard() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [previewDocId, setPreviewDocId] = useState<string | null>(null);
 
+  const [showSummaryPopup, setShowSummaryPopup] = useState(false);
+  const [summaryContent, setSummaryContent] = useState<string | null>(null);
+  const [summarizing, setSummarizing] = useState(false);
+  const [currentSummaryDocTitle, setCurrentSummaryDocTitle] = useState<string | null>(null);
+
   const documentsEndpoint = buildApiUrl('/api/Documents');
+  const geminiEndpoint = buildApiUrl('http://localhost:8090/api/Gemini');
 
   // Fetch documents from API
   const fetchDocuments = async () => {
@@ -138,6 +144,45 @@ export default function Dashboard() {
     }
   };
 
+  const summarize = async (doc: Document) => {
+    try {
+      setSummarizing(true);
+      setSummaryContent(null);
+      setShowSummaryPopup(true);
+      setCurrentSummaryDocTitle(doc.title);
+      setError(null);
+
+      // Using the document ID in the request body
+      const response = await fetch(`${geminiEndpoint}/summarize`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(doc.metadata),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || `HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      setSummaryContent(result.summaryText || 'No summary available.');
+
+    } catch (err) {
+      setSummaryContent(`Error: ${err instanceof Error ? err.message : 'Failed to fetch summary'}`);
+      setError(err instanceof Error ? err.message : 'Failed to get document summary');
+    } finally {
+      setSummarizing(false);
+    }
+  }
+
+  const closeSummaryPopup = () => {
+    setShowSummaryPopup(false);
+    setSummaryContent(null);
+    setCurrentSummaryDocTitle(null);
+  };
+
   useEffect(() => {
     fetchDocuments();
   }, []);
@@ -182,10 +227,10 @@ export default function Dashboard() {
     try {
       const doc = documents.find(d => d.id === id);
       const downloadUrl = buildApiUrl(`/api/Documents/${id}/content`);
-      
+
       const response = await fetch(downloadUrl);
       if (!response.ok) throw new Error('Download failed');
-      
+
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -252,7 +297,7 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Add Document Form */}
+        {/* Add Document Form (omitted for brevity) */}
         {showUploadForm && (
           <div className={styles.formContainer}>
             <h3 className={styles.formTitle}>Upload PDF (Max {MAX_FILE_MB} MB)</h3>
@@ -330,7 +375,7 @@ export default function Dashboard() {
               </div>
             )}
 
-              <div className={styles.formActions}>
+            <div className={styles.formActions}>
               <button
                 onClick={uploadDocument}
                 className={styles.buttonPrimary}
@@ -378,6 +423,33 @@ export default function Dashboard() {
                   <div className={styles.sizePill}>
                     {(doc.size / (1024 * 1024)).toFixed(2)} MB
                   </div>
+                </div>
+
+                {/* Metadata / OCR Text Section */}
+                <div className={styles.metadataSection}>
+                  <div className={styles.metadataLabel}>
+                    📝 OCR Text
+                  </div>
+                  {doc.metadata && doc.metadata.trim() !== '' ? (
+                    <div className={styles.metadataContent}>
+                      {doc.metadata}
+                    </div>
+                  ) : (
+                    <div className={styles.metadataEmpty}>
+                      Kein OCR-Text verfügbar
+                    </div>
+                  )}
+                </div>
+
+                {/* Document Actions */}
+                <div className={styles.docActions}>
+                  <button
+                    onClick={() => summarize(doc)}
+                    className={styles.btnSummarize}
+                    disabled={summarizing}
+                  >
+                    📝 Summarize
+                  </button>
                   <button
                     onClick={() => handleDownload(doc.id)}
                     className={styles.btnDownload}
@@ -391,27 +463,43 @@ export default function Dashboard() {
                     🗑️ Delete
                   </button>
                 </div>
-                
-                {/* Metadata / OCR Text Section */}
-                <div className={styles.metadataSection}>
-                  <div className={styles.metadataLabel}>
-                    📝 OCR Text (Erste Seite)
-                  </div>
-                  {doc.metadata && doc.metadata.trim() !== '' ? (
-                    <div className={styles.metadataContent}>
-                      {doc.metadata}
-                    </div>
-                  ) : (
-                    <div className={styles.metadataEmpty}>
-                      Kein OCR-Text verfügbar
-                    </div>
-                  )}
-                </div>
               </div>
             ))}
           </div>
         )}
       </div>
+
+      {/* Summary Popup / Modal */}
+      {showSummaryPopup && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.modalContent}>
+            <div className={styles.modalHeader}>
+              <h2 className={styles.modalTitle}>
+                Summary for: **{currentSummaryDocTitle}**
+              </h2>
+              <button onClick={closeSummaryPopup} className={styles.modalCloseButton}>
+                &times;
+              </button>
+            </div>
+
+            <div className={styles.modalBody}>
+              {summarizing ? (
+                <div className={styles.loading}>Generating summary...</div>
+              ) : summaryContent ? (
+                <p className={styles.summaryText}>{summaryContent}</p>
+              ) : (
+                <p>Failed to load summary or no summary available.</p>
+              )}
+            </div>
+
+            <div className={styles.modalFooter}>
+              <button onClick={closeSummaryPopup} className={styles.buttonSecondary}>
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

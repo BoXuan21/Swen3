@@ -127,6 +127,15 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  gemini:
+      build:
+        context: . 
+        dockerfile: Swen3.Gemini/Dockerfile
+      ports:
+        - "8090:8090"
+      env_file:
+        - Swen3.Gemini/.env
+
 volumes:
   postgres_data:
     driver: local

@@ -485,3 +485,4 @@ FodyWeavers.xsd
 
 .idea
 Swen3Tests/obj
+**/.env
