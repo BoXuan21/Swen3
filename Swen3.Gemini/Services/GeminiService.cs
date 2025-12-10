@@ -1,7 +1,8 @@
 using System.Text;
 using System.Text.Json;
 
-namespace Swen3.Gemini.Services {
+namespace Swen3.Gemini.Services
+{
     public class GeminiService
     {
         private readonly HttpClient _http = new();
@@ -9,8 +10,10 @@ namespace Swen3.Gemini.Services {
 
         public async Task<string> SendPromptAsync(string text)
         {
+            string systemPrompt = "Make a short summary for the text that you are given in 2-3 sentences.";
             var payload = new
             {
+                systemInstruction = systemPrompt,
                 contents = new[]
                 {
                     new
