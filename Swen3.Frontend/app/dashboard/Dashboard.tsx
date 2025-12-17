@@ -2,23 +2,9 @@
 
 import { useState, useEffect, useRef } from 'react';
 import styles from './page.module.css';
-
-interface Document {
-  id: string;
-  title: string;
-  fileName: string;
-  mimeType: string;
-  size: number;
-  uploadedAt: string;
-  metadata: string;
-  storageKey: string;
-}
-
-const MAX_FILE_BYTES = 25 * 1024 * 1024; // 25 MB
-const MAX_FILE_MB = MAX_FILE_BYTES / (1024 * 1024);
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? '';
-
-const buildApiUrl = (path: string) => `${API_BASE}${path}`;
+import { buildApiUrl } from '../utils/utils';
+import { CONSTANTS } from '../utils/constants';
+import { Document } from '../models/Document';
 
 export default function Dashboard() {
   const [documents, setDocuments] = useState<Document[]>([]);
@@ -88,8 +74,8 @@ export default function Dashboard() {
         throw new Error('Please drop a PDF file.');
       }
 
-      if (selectedFile.size > MAX_FILE_BYTES) {
-        throw new Error(`File exceeds ${MAX_FILE_MB} MB limit.`);
+      if (selectedFile.size > CONSTANTS.MAX_FILE_BYTES) {
+        throw new Error(`File exceeds ${CONSTANTS.MAX_FILE_MB} MB limit.`);
       }
 
       const formData = new FormData();
@@ -167,7 +153,7 @@ export default function Dashboard() {
       }
 
       const result = await response.json();
-      setSummaryContent(result.candidates[0].content.parts[0].text || 'No summary available.');
+      setSummaryContent(result.summaryText || 'No summary available.');
 
     } catch (err) {
       setSummaryContent(`Error: ${err instanceof Error ? err.message : 'Failed to fetch summary'}`);
@@ -201,8 +187,8 @@ export default function Dashboard() {
       return;
     }
 
-    if (file.size > MAX_FILE_BYTES) {
-      setError(`File exceeds ${MAX_FILE_MB} MB limit.`);
+    if (file.size > CONSTANTS.MAX_FILE_BYTES) {
+      setError(`File exceeds ${CONSTANTS.MAX_FILE_MB} MB limit.`);
       return;
     }
 
@@ -221,7 +207,7 @@ export default function Dashboard() {
     handleFileSelection(file ?? null);
   };
 
-  const fileSizeUsage = selectedFile ? (selectedFile.size / MAX_FILE_BYTES) * 100 : 0;
+  const fileSizeUsage = selectedFile ? (selectedFile.size / CONSTANTS.MAX_FILE_BYTES) * 100 : 0;
 
   const handleDownload = async (id: string) => {
     try {
@@ -300,7 +286,7 @@ export default function Dashboard() {
         {/* Add Document Form (omitted for brevity) */}
         {showUploadForm && (
           <div className={styles.formContainer}>
-            <h3 className={styles.formTitle}>Upload PDF (Max {MAX_FILE_MB} MB)</h3>
+            <h3 className={styles.formTitle}>Upload PDF (Max {CONSTANTS.MAX_FILE_MB} MB)</h3>
             <div className={styles.formGrid}>
               <input
                 type="text"
@@ -336,7 +322,7 @@ export default function Dashboard() {
                 Drag and drop your PDF here, or click to browse
               </p>
               <p className={styles.dropSubHint}>
-                Accepted format: PDF · Maximum size {MAX_FILE_MB} MB
+                Accepted format: PDF · Maximum size {CONSTANTS.MAX_FILE_MB} MB
               </p>
               {selectedFile && (
                 <div className={styles.fileInfo}>
