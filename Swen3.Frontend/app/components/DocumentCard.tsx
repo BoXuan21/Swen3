@@ -1,9 +1,10 @@
-import styles from './page.module.css';
+import styles from '../dashboard/page.module.css';
 import { useState, useEffect, useRef } from 'react';
 import { buildApiUrl } from '../utils/utils';
 import { Document } from '../models/Document';
 
 const geminiEndpoint = 'http://localhost:8090/api/Gemini';
+const documentsEndpoint = buildApiUrl('/api/Documents');
 
 function DocumentCard(doc: Document) {
 
@@ -35,6 +36,23 @@ function DocumentCard(doc: Document) {
       setError(err instanceof Error ? err.message : 'Failed to download document');
     }
   };
+
+  const deleteDocument = async (id: string) => {
+    try {
+      const response = await fetch(`${documentsEndpoint}/${id}`, {
+        method: 'DELETE'
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      setDocuments(documents.filter(doc => doc.id !== id));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete document');
+    }
+  };
+
 
   const summarize = async (doc: Document) => {
     try {
@@ -69,59 +87,57 @@ function DocumentCard(doc: Document) {
     }
   }
   return (
-    <div className={styles.documentsGrid}>
-      <div key={doc.id} className={styles.docCard}>
-        <h3 className={styles.docTitle}>{doc.title}</h3>
-        <div className={styles.docMeta}>
-          <div>📁 {doc.fileName}</div>
-          <div>📅 {new Date(doc.uploadedAt).toLocaleDateString()}</div>
-          <div>🏷️ {doc.mimeType}</div>
-          <div className={styles.sizePill}>
-            {(doc.size / (1024 * 1024)).toFixed(2)} MB
-          </div>
+    <div key={doc.id} className={styles.docCard}>
+      <h3 className={styles.docTitle}>{doc.title}</h3>
+      <div className={styles.docMeta}>
+        <div>📁 {doc.fileName}</div>
+        <div>📅 {new Date(doc.uploadedAt).toLocaleDateString()}</div>
+        <div>🏷️ {doc.mimeType}</div>
+        <div className={styles.sizePill}>
+          {(doc.size / (1024 * 1024)).toFixed(2)} MB
         </div>
+      </div>
 
-        {/* Metadata / OCR Text Section */}
-        <div className={styles.metadataSection}>
-          <div className={styles.metadataLabel}>
-            📝 OCR Text
+      {/* Metadata / OCR Text Section */}
+      <div className={styles.metadataSection}>
+        <div className={styles.metadataLabel}>
+          📝 OCR Text
+        </div>
+        {doc.metadata && doc.metadata.trim() !== '' ? (
+          <div className={styles.metadataContent}>
+            {doc.metadata}
           </div>
-          {doc.metadata && doc.metadata.trim() !== '' ? (
-            <div className={styles.metadataContent}>
-              {doc.metadata}
-            </div>
-          ) : (
-            <div className={styles.metadataEmpty}>
-              No preview text available
-            </div>
-          )}
-        </div>
+        ) : (
+          <div className={styles.metadataEmpty}>
+            No preview text available
+          </div>
+        )}
+      </div>
 
-        {/* Document Actions */}
-        <div className={styles.docActions}>
-          <button
-            onClick={() => summarize(doc)}
-            className={styles.btnSummarize}
-            disabled={summarizing}
-          >
-            📝 Summarize
-          </button>
-          <button
-            onClick={() => handleDownload(doc.id)}
-            className={styles.btnDownload}
-          >
-            ⬇️ Download
-          </button>
-          <button
-            onClick={() => deleteDocument(doc.id)}
-            className={styles.btnDelete}
-          >
-            🗑️ Delete
-          </button>
-        </div>
+      {/* Document Actions */}
+      <div className={styles.docActions}>
+        <button
+          onClick={() => summarize(doc)}
+          className={styles.btnSummarize}
+          disabled={summarizing}
+        >
+          📝 Summarize
+        </button>
+        <button
+          onClick={() => handleDownload(doc.id)}
+          className={styles.btnDownload}
+        >
+          ⬇️ Download
+        </button>
+        <button
+          onClick={() => deleteDocument(doc.id)}
+          className={styles.btnDelete}
+        >
+          🗑️ Delete
+        </button>
       </div>
     </div>
   );
 }
 
-export default Document;
+export default DocumentCard;
