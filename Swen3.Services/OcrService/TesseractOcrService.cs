@@ -51,11 +51,12 @@ namespace Swen3.Services.OcrService
                                     .ToList();
                 _logger.LogInformation("Number of pages: {Pages}", tiffFiles.Count());
 
+                var pages = new List<string>();
                 foreach (var tiffPath in tiffFiles)
                 {
-                    _logger.LogInformation("Reading page " + tiffPath);
-                    textResult += RunOcrWithTesseract(tiffPath) + Environment.NewLine + "--- PAGE BREAK ---" + Environment.NewLine;
+                    pages.Add(RunOcrWithTesseract(tiffPath));
                 }
+                textResult = string.Join(Environment.NewLine + "--- PAGE BREAK ---" + Environment.NewLine, pages);
 
                 _logger.LogInformation("Finished reading document!");
 
