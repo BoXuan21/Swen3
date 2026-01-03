@@ -1,4 +1,4 @@
 ﻿namespace Swen3.API.DAL.DTOs
 {
-    public record DocumentDto(Guid Id, string Title, string FileName, string MimeType, long Size, DateTime UploadedAt, string Metadata, string StorageKey);
+    public record DocumentDto(Guid Id, string Title, string FileName, string MimeType, long Size, DateTime UploadedAt, string Metadata, string StorageKey, int? PriorityId, string? PriorityName);
 }

@@ -1,5 +1,6 @@
 ﻿using Tesseract;
 using System.Diagnostics;
+using Swen3.Shared.Elasticsearch;
 using Swen3.Shared.Messaging;
 using Swen3.Shared.OcrService;
 using Swen3.Storage.MiniIo;
@@ -11,6 +12,7 @@ namespace Swen3.Services.OcrService
         private readonly ILogger<TesseractOcrService> _logger;
         private readonly IDocumentStorageService _storage;
         private readonly IMessagePublisher _publisher;
+        private readonly IElasticsearchService _elasticsearchService;
 
         private const string TessDataPath = "/usr/share/tesseract-ocr/5/tessdata";
         private const string Language = "eng";
@@ -22,11 +24,16 @@ namespace Swen3.Services.OcrService
         private const string ImageMagickDensity = "300";
         private const string OutputFormat = "tiff";
 
-        public TesseractOcrService(ILogger<TesseractOcrService> logger, IDocumentStorageService storage, IMessagePublisher publisher)
+        public TesseractOcrService(
+            ILogger<TesseractOcrService> logger,
+            IDocumentStorageService storage,
+            IMessagePublisher publisher,
+            IElasticsearchService elasticsearchService)
         {
             _logger = logger;
             _storage = storage;
             _publisher = publisher;
+            _elasticsearchService = elasticsearchService;
             _logger.LogInformation("OcrService initialized!");
         }
 
@@ -59,6 +66,22 @@ namespace Swen3.Services.OcrService
                 textResult = string.Join(Environment.NewLine + "--- PAGE BREAK ---" + Environment.NewLine, pages);
 
                 _logger.LogInformation("Finished reading document!");
+
+                // Index the OCR text in Elasticsearch for full-text search
+                var indexed = await _elasticsearchService.IndexDocumentAsync(
+                    message.DocumentId,
+                    textResult,
+                    message.FileName,
+                    cancellationToken);
+
+                if (indexed)
+                {
+                    _logger.LogInformation("Document {DocumentId} indexed in Elasticsearch", message.DocumentId);
+                }
+                else
+                {
+                    _logger.LogWarning("Failed to index document {DocumentId} in Elasticsearch", message.DocumentId);
+                }
 
                 var updatedMessage = message with
                 {

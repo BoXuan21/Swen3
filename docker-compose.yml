@@ -57,12 +57,16 @@ services:
       - Minio__SecretKey=minioadmin
       - Minio__BucketName=documents
       - Minio__UseSsl=false
+      - Elasticsearch__Url=http://elasticsearch:9200
+      - Elasticsearch__IndexName=documents
     depends_on:
       db:
         condition: service_started
       rabbitmq:
         condition: service_healthy
       minio:
+        condition: service_healthy
+      elasticsearch:
         condition: service_healthy
     restart: unless-stopped
 
@@ -120,10 +124,14 @@ services:
       - Minio__SecretKey=minioadmin
       - Minio__BucketName=documents
       - Minio__UseSsl=false
+      - Elasticsearch__Url=http://elasticsearch:9200
+      - Elasticsearch__IndexName=documents
     depends_on:
       rabbitmq:
         condition: service_healthy
       minio:
+        condition: service_healthy
+      elasticsearch:
         condition: service_healthy
     restart: unless-stopped
 

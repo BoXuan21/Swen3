@@ -4,6 +4,7 @@ using Swen3.API.Common.Exceptions;
 using Swen3.API.DAL.DTOs;
 using Swen3.API.DAL.Interfaces;
 using Swen3.API.DAL.Models;
+using Swen3.Shared.Elasticsearch;
 using Swen3.Shared.Messaging;
 using Swen3.Storage.MiniIo;
 
@@ -18,14 +19,22 @@ namespace Swen3.API.Controllers
         private readonly ILogger<DocumentsController> _logger;
         private readonly IMessagePublisher _publisher;
         private readonly IDocumentStorageService _storage;
+        private readonly IElasticsearchService _elasticsearchService;
 
-        public DocumentsController(IDocumentRepository repo, IMapper mapper, ILogger<DocumentsController> logger, IMessagePublisher publisher, IDocumentStorageService storage)
+        public DocumentsController(
+            IDocumentRepository repo, 
+            IMapper mapper, 
+            ILogger<DocumentsController> logger, 
+            IMessagePublisher publisher, 
+            IDocumentStorageService storage,
+            IElasticsearchService elasticsearchService)
         {
             _repo = repo;
             _mapper = mapper;
             _logger = logger;
             _publisher = publisher;
             _storage = storage;
+            _elasticsearchService = elasticsearchService;
         }
 
         [HttpGet]
@@ -50,6 +59,36 @@ namespace Swen3.API.Controllers
 
             var documentDto = _mapper.Map<DocumentDto>(document);
             return Ok(documentDto);
+        }
+
+        [HttpGet("search")]
+        public async Task<IActionResult> Search(
+            [FromQuery] string? query,
+            [FromQuery] int? priorityId,
+            CancellationToken cancellationToken)
+        {
+            _logger.LogInformation("GET /api/documents/search - Searching documents with query: {Query}, priorityId: {PriorityId}", query, priorityId);
+
+            IReadOnlyList<Guid>? documentIds = null;
+
+            // If a text query is provided, search Elasticsearch for matching document IDs
+            if (!string.IsNullOrWhiteSpace(query))
+            {
+                documentIds = await _elasticsearchService.SearchAsync(query, cancellationToken);
+                _logger.LogInformation("Elasticsearch returned {Count} document IDs for query: {Query}", documentIds.Count, query);
+
+                // If Elasticsearch returns no results for a text query, return empty
+                if (documentIds.Count == 0)
+                {
+                    return Ok(Enumerable.Empty<DocumentDto>());
+                }
+            }
+
+            // Search in PostgreSQL with optional ES results and priority filter
+            var documents = await _repo.SearchAsync(documentIds, priorityId);
+            var documentDtos = _mapper.Map<IEnumerable<DocumentDto>>(documents);
+
+            return Ok(documentDtos);
         }
 
         [Consumes("multipart/form-data")]
@@ -119,6 +158,39 @@ namespace Swen3.API.Controllers
             await _publisher.PublishDocumentUploadedAsync(message, Topology.Exchange, Topology.RoutingKey);
 
             return CreatedAtAction(nameof(GetById), new { id = doc.Id }, createdDto);
+        }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Update(Guid id, [FromBody] UpdateDocumentRequest request)
+        {
+            _logger.LogInformation("PUT /api/documents/{DocumentId} - Updating document", id);
+
+            if (request == null)
+            {
+                _logger.LogWarning("Update document request received with null body");
+                throw new ValidationException("Document data is required");
+            }
+
+            var document = await _repo.GetByIdAsync(id);
+            if (document == null)
+            {
+                _logger.LogWarning("Document with id: {DocumentId} not found for update", id);
+                throw new NotFoundException("Document", id);
+            }
+
+            // Update fields
+            document.Title = request.Title.Trim();
+            document.PriorityId = request.PriorityId;
+
+            await _repo.UpdateAsync(document);
+
+            // Re-fetch to get the updated Priority navigation property
+            document = await _repo.GetByIdAsync(id);
+            
+            _logger.LogInformation("Successfully updated document with id: {DocumentId}", id);
+            var updatedDto = _mapper.Map<DocumentDto>(document);
+
+            return Ok(updatedDto);
         }
 
         [HttpGet("{id}/content")]

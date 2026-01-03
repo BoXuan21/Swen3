@@ -1,5 +1,6 @@
 using Moq;
 using Swen3.Shared.Messaging;
+using Swen3.Shared.Elasticsearch;
 using Swen3.Storage.MiniIo;
 using Swen3.Services.OcrService;
 using Microsoft.Extensions.Logging;
@@ -11,12 +12,22 @@ public class OcrServiceMocks
     public Mock<ILogger<TesseractOcrService>> MockLogger { get; }
     public Mock<IDocumentStorageService> MockStorage { get; }
     public Mock<IMessagePublisher> MockPublisher { get; }
+    public Mock<IElasticsearchService> MockElasticsearch { get; }
 
     public OcrServiceMocks()
     {
         MockLogger = new Mock<ILogger<TesseractOcrService>>();
         MockStorage = new Mock<IDocumentStorageService>();
         MockPublisher = new Mock<IMessagePublisher>();
+        MockElasticsearch = new Mock<IElasticsearchService>();
+        
+        // Default: Elasticsearch indexing succeeds
+        MockElasticsearch.Setup(es => es.IndexDocumentAsync(
+            It.IsAny<Guid>(),
+            It.IsAny<string>(),
+            It.IsAny<string>(),
+            It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
     }
 
     public TesseractOcrService CreateService()
@@ -24,7 +35,8 @@ public class OcrServiceMocks
         return new TesseractOcrService(
             MockLogger.Object,
             MockStorage.Object,
-            MockPublisher.Object
+            MockPublisher.Object,
+            MockElasticsearch.Object
         );
     }
 

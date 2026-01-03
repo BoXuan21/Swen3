@@ -13,3 +13,11 @@ public class CreateDocumentRequest
     public IFormFile? File { get; set; }
 }
 
+public class UpdateDocumentRequest
+{
+    [Required]
+    public string Title { get; set; } = string.Empty;
+
+    public int? PriorityId { get; set; }
+}
+

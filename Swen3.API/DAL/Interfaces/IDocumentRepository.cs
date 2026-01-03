@@ -6,6 +6,8 @@ namespace Swen3.API.DAL.Interfaces
     {
         Task<IEnumerable<Document>> GetAllAsync();
         Task<Document?> GetByIdAsync(Guid id);
+        Task<IEnumerable<Document>> GetByIdsAsync(IEnumerable<Guid> ids);
+        Task<IEnumerable<Document>> SearchAsync(IEnumerable<Guid>? documentIds, int? priorityId);
         Task AddAsync(Document doc);
         Task UpdateAsync(Document doc);
         Task DeleteAsync(Guid id);

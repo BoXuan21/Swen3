@@ -22,6 +22,7 @@ namespace Swen3.API.DAL.Repositories
             {
                 _logger.LogInformation("Retrieving all documents");
                 var documents = await _ctx.Documents
+                    .Include(d => d.Priority)
                     .OrderByDescending(d => d.UploadedAt)
                     .ToListAsync();
                 _logger.LogInformation("Retrieved {Count} documents", documents.Count);
@@ -40,6 +41,7 @@ namespace Swen3.API.DAL.Repositories
             {
                 _logger.LogDebug("Retrieving document with id: {DocumentId}", id);
                 var document = await _ctx.Documents
+                    .Include(d => d.Priority)
                     .FirstOrDefaultAsync(d => d.Id == id);
                 return document;
             }
@@ -47,6 +49,64 @@ namespace Swen3.API.DAL.Repositories
             {
                 _logger.LogError(ex, "Error retrieving document with id: {DocumentId}", id);
                 throw new RepositoryException($"Failed to retrieve document with id {id}", ex);
+            }
+        }
+
+        public async Task<IEnumerable<Document>> GetByIdsAsync(IEnumerable<Guid> ids)
+        {
+            try
+            {
+                _logger.LogDebug("Retrieving documents by {Count} ids", ids.Count());
+                var idList = ids.ToList();
+                var documents = await _ctx.Documents
+                    .Include(d => d.Priority)
+                    .Where(d => idList.Contains(d.Id))
+                    .OrderByDescending(d => d.UploadedAt)
+                    .ToListAsync();
+                return documents;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving documents by ids");
+                throw new RepositoryException("Failed to retrieve documents by ids", ex);
+            }
+        }
+
+        public async Task<IEnumerable<Document>> SearchAsync(IEnumerable<Guid>? documentIds, int? priorityId)
+        {
+            try
+            {
+                _logger.LogInformation("Searching documents with priorityId: {PriorityId}, documentIds count: {Count}", 
+                    priorityId, documentIds?.Count() ?? 0);
+
+                var query = _ctx.Documents
+                    .Include(d => d.Priority)
+                    .AsQueryable();
+
+                // If we have document IDs from Elasticsearch, filter by them
+                if (documentIds != null)
+                {
+                    var idList = documentIds.ToList();
+                    query = query.Where(d => idList.Contains(d.Id));
+                }
+
+                // Filter by priority if specified
+                if (priorityId.HasValue)
+                {
+                    query = query.Where(d => d.PriorityId == priorityId.Value);
+                }
+
+                var documents = await query
+                    .OrderByDescending(d => d.UploadedAt)
+                    .ToListAsync();
+
+                _logger.LogInformation("Search returned {Count} documents", documents.Count);
+                return documents;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error searching documents");
+                throw new RepositoryException("Failed to search documents", ex);
             }
         }
 
