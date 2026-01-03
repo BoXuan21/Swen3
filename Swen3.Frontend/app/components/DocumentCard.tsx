@@ -1,24 +1,27 @@
 import styles from '../dashboard/page.module.css';
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import { buildApiUrl } from '../utils/utils';
-import { Document } from '../models/Document';
+import { Document, Priority } from '../models/Document';
 import SummaryPopup from './SummaryPopup';
 
 const geminiEndpoint = 'http://localhost:8090/api/Gemini';
 const documentsEndpoint = buildApiUrl('/api/Documents');
 
-export default function DocumentCard(doc: Document) {
+interface DocumentCardProps {
+  document: Document;
+  priorities: Priority[];
+  onDocumentUpdate: (doc: Document) => void;
+}
 
+export default function DocumentCard({ document: doc, priorities, onDocumentUpdate }: DocumentCardProps) {
   const [error, setError] = useState<string | null>(null);
   const [showSummaryPopup, setShowSummaryPopup] = useState(false);
   const [summaryContent, setSummaryContent] = useState<string | null>(null);
   const [summarizing, setSummarizing] = useState(false);
-  const [currentSummaryDocTitle, setCurrentSummaryDocTitle] = useState<string | null>(null);
-  const [documents, setDocuments] = useState<Document[]>([]);
+  const [updatingPriority, setUpdatingPriority] = useState(false);
 
   const handleDownload = async (id: string) => {
     try {
-      const doc = documents.find(d => d.id === id);
       const downloadUrl = buildApiUrl(`/api/Documents/${id}/content`);
 
       const response = await fetch(downloadUrl);
@@ -48,22 +51,51 @@ export default function DocumentCard(doc: Document) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      setDocuments(documents.filter(doc => doc.id !== id));
+      // Trigger a refresh by calling onDocumentUpdate with a deleted flag
+      // For now, we'll just reload the page
+      window.location.reload();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete document');
+    }
+  };
+
+  const handlePriorityChange = async (newPriorityId: number | null) => {
+    try {
+      setUpdatingPriority(true);
+      setError(null);
+
+      const response = await fetch(`${documentsEndpoint}/${doc.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...doc,
+          priorityId: newPriorityId
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const updatedDoc = await response.json();
+      onDocumentUpdate(updatedDoc);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update priority');
+    } finally {
+      setUpdatingPriority(false);
     }
   };
 
   const handleSummarize = async () => {
     try {
       setSummarizing(true);
-      setShowSummaryPopup(true); // Open popup immediately to show "Generating..."
+      setShowSummaryPopup(true);
       setError(null);
 
       const response = await fetch(`${geminiEndpoint}/summarize`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(doc.metadata), // Ensure your backend expects this format
+        body: JSON.stringify(doc.metadata),
       });
 
       if (!response.ok) throw new Error('Summarization failed');
@@ -77,8 +109,34 @@ export default function DocumentCard(doc: Document) {
     }
   };
 
+  // Get priority color based on level
+  const getPriorityColor = (priorityName: string | null) => {
+    if (!priorityName) return styles.priorityNone;
+    if (priorityName.includes('Very Important')) return styles.priorityHigh;
+    if (priorityName.includes('Important')) return styles.priorityMedium;
+    return styles.priorityLow;
+  };
+
   return (
     <div key={doc.id} className={styles.docCard}>
+      {/* Priority Badge */}
+      <div className={styles.prioritySection}>
+        <select
+          value={doc.priorityId ?? ''}
+          onChange={(e) => handlePriorityChange(e.target.value ? parseInt(e.target.value) : null)}
+          className={`${styles.priorityBadge} ${getPriorityColor(doc.priorityName)}`}
+          disabled={updatingPriority}
+        >
+          <option value="">No Priority</option>
+          {priorities.map((priority) => (
+            <option key={priority.id} value={priority.id}>
+              {priority.name}
+            </option>
+          ))}
+        </select>
+        {updatingPriority && <span className={styles.priorityLoading}>⏳</span>}
+      </div>
+
       <h3 className={styles.docTitle}>{doc.title}</h3>
       <div className={styles.docMeta}>
         <div>📁 {doc.fileName}</div>
@@ -88,6 +146,13 @@ export default function DocumentCard(doc: Document) {
           {(doc.size / (1024 * 1024)).toFixed(2)} MB
         </div>
       </div>
+
+      {/* Error Message */}
+      {error && (
+        <div className={styles.cardError}>
+          {error}
+        </div>
+      )}
 
       {/* Metadata / OCR Text Section */}
       <div className={styles.metadataSection}>

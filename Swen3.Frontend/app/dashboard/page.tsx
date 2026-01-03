@@ -4,11 +4,12 @@ import { useState, useEffect, useRef } from 'react';
 import styles from './page.module.css';
 import { buildApiUrl } from '../utils/utils';
 import { CONSTANTS } from '../utils/constants';
-import { Document } from '../models/Document';
+import { Document, Priority } from '../models/Document';
 import DocumentCard from '../components/DocumentCard';
 
 export default function Dashboard() {
   const [documents, setDocuments] = useState<Document[]>([]);
+  const [priorities, setPriorities] = useState<Priority[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showUploadForm, setShowUploadForm] = useState(false);
@@ -21,13 +22,33 @@ export default function Dashboard() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [previewDocId, setPreviewDocId] = useState<string | null>(null);
 
+  // Search and filter state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedPriorityFilter, setSelectedPriorityFilter] = useState<number | null>(null);
+  const [searching, setSearching] = useState(false);
+
   const [showSummaryPopup, setShowSummaryPopup] = useState(false);
   const [summaryContent, setSummaryContent] = useState<string | null>(null);
   const [summarizing, setSummarizing] = useState(false);
   const [currentSummaryDocTitle, setCurrentSummaryDocTitle] = useState<string | null>(null);
 
   const documentsEndpoint = buildApiUrl('/api/Documents');
+  const prioritiesEndpoint = buildApiUrl('/api/Priorities');
   const geminiEndpoint = buildApiUrl('http://localhost:8090/api/Gemini');
+
+  // Fetch priorities from API
+  const fetchPriorities = async () => {
+    try {
+      const response = await fetch(prioritiesEndpoint);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      setPriorities(data);
+    } catch (err) {
+      console.error('Failed to fetch priorities:', err);
+    }
+  };
 
   // Fetch documents from API
   const fetchDocuments = async () => {
@@ -45,6 +66,50 @@ export default function Dashboard() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Search documents
+  const searchDocuments = async () => {
+    try {
+      setSearching(true);
+      setError(null);
+
+      const params = new URLSearchParams();
+      if (searchQuery.trim()) {
+        params.append('query', searchQuery.trim());
+      }
+      if (selectedPriorityFilter !== null) {
+        params.append('priorityId', selectedPriorityFilter.toString());
+      }
+
+      const searchUrl = `${documentsEndpoint}/search?${params.toString()}`;
+      const response = await fetch(searchUrl);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      setDocuments(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to search documents');
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  // Clear search and show all documents
+  const clearSearch = () => {
+    setSearchQuery('');
+    setSelectedPriorityFilter(null);
+    fetchDocuments();
+  };
+
+  // Handle document update (for priority changes)
+  const handleDocumentUpdate = (updatedDoc: Document) => {
+    setDocuments(prevDocs => 
+      prevDocs.map(doc => doc.id === updatedDoc.id ? updatedDoc : doc)
+    );
   };
 
   const resetUploadState = () => {
@@ -116,6 +181,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchDocuments();
+    fetchPriorities();
   }, []);
 
   useEffect(() => {
@@ -180,6 +246,47 @@ export default function Dashboard() {
           <div className={styles.card}>
             <div className={`${styles.metric} ${styles.metricBlue}`}>{documents.length}</div>
             <div className={styles.subtitle}>Total Documents</div>
+          </div>
+        </div>
+
+        {/* Search and Filter Section */}
+        <div className={styles.searchSection}>
+          <div className={styles.searchBar}>
+            <input
+              type="text"
+              placeholder="Search documents by content..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && searchDocuments()}
+              className={styles.searchInput}
+            />
+            <select
+              value={selectedPriorityFilter ?? ''}
+              onChange={(e) => setSelectedPriorityFilter(e.target.value ? parseInt(e.target.value) : null)}
+              className={styles.prioritySelect}
+            >
+              <option value="">All Priorities</option>
+              {priorities.map((priority) => (
+                <option key={priority.id} value={priority.id}>
+                  {priority.name}
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={searchDocuments}
+              className={styles.buttonSearch}
+              disabled={searching}
+            >
+              {searching ? '⏳' : '🔍'} Search
+            </button>
+            {(searchQuery || selectedPriorityFilter !== null) && (
+              <button
+                onClick={clearSearch}
+                className={styles.buttonClear}
+              >
+                ✕ Clear
+              </button>
+            )}
           </div>
         </div>
 
@@ -323,7 +430,12 @@ export default function Dashboard() {
         ) : (
           <div className={styles.documentsGrid}>
             {documents.map((doc) => (
-              <DocumentCard {...doc} />
+              <DocumentCard 
+                key={doc.id}
+                document={doc} 
+                priorities={priorities}
+                onDocumentUpdate={handleDocumentUpdate}
+              />
             ))}
           </div>
         )}

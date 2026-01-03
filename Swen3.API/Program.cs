@@ -1,4 +1,5 @@
 using Swen3.Shared.Messaging;
+using Swen3.Shared.Elasticsearch;
 using Microsoft.Extensions.Options;
 using Swen3.API.DAL;
 using Swen3.API.DAL.Mapping;
@@ -29,6 +30,15 @@ namespace Swen3.API
                 .ValidateOnStart();
 
             builder.Services.AddSingleton<IDocumentStorageService, MinioDocumentStorageService>();
+
+            // Add Elasticsearch
+            builder.Services
+                .AddOptions<ElasticsearchOptions>()
+                .Bind(builder.Configuration.GetSection("Elasticsearch"))
+                .ValidateDataAnnotations()
+                .ValidateOnStart();
+
+            builder.Services.AddSingleton<IElasticsearchService, ElasticsearchService>();
 
             // Add RabbitMq
             builder.Services.Configure<RabbitMqConfiguration>(builder.Configuration.GetSection("Messaging"));

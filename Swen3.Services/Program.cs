@@ -2,6 +2,7 @@ using Swen3.Services.OcrService;
 using Swen3.Shared.OcrService;
 using Swen3.Services.Messaging;
 using Swen3.Shared.Messaging;
+using Swen3.Shared.Elasticsearch;
 using Swen3.Storage.MiniIo;
 
 namespace Swen3.Services
@@ -27,6 +28,15 @@ namespace Swen3.Services
                 .ValidateOnStart();
 
             builder.Services.AddSingleton<IDocumentStorageService, MinioDocumentStorageService>();
+
+            // Elasticsearch configuration
+            builder.Services
+                .AddOptions<ElasticsearchOptions>()
+                .Bind(builder.Configuration.GetSection("Elasticsearch"))
+                .ValidateDataAnnotations()
+                .ValidateOnStart();
+
+            builder.Services.AddScoped<IElasticsearchService, ElasticsearchService>();
 
             var host = builder.Build();
             host.Run();

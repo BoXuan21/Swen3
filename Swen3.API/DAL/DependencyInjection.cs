@@ -16,6 +16,7 @@ namespace Swen3.API.DAL
                 options.UseNpgsql(conn));
 
             services.AddScoped<IDocumentRepository, DocumentRepository>();
+            services.AddScoped<IPriorityRepository, PriorityRepository>();
 
             return services;
 

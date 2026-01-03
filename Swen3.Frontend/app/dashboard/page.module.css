@@ -252,4 +252,66 @@
   @apply flex-1 w-full rounded-b-lg;
 }
 
+/* Search Section Styles */
+.searchSection {
+  @apply bg-white rounded-lg shadow-md p-4 mb-6;
+}
+
+.searchBar {
+  @apply flex flex-wrap gap-3 items-center;
+}
+
+.searchInput {
+  @apply flex-1 min-w-64 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-black placeholder-gray-500;
+}
+
+.prioritySelect {
+  @apply border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-black bg-white cursor-pointer;
+}
+
+.buttonSearch {
+  @apply bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-1;
+}
+
+.buttonClear {
+  @apply bg-gray-400 hover:bg-gray-500 text-white px-3 py-2 rounded-lg transition-colors text-sm;
+}
+
+/* Priority Badge Styles */
+.prioritySection {
+  @apply flex items-center gap-2 mb-3;
+}
+
+.priorityBadge {
+  @apply text-xs font-semibold px-2 py-1 rounded-full border-0 cursor-pointer transition-all focus:outline-none focus:ring-2 focus:ring-offset-1;
+}
+
+.priorityHigh {
+  @apply bg-red-100 text-red-800 focus:ring-red-400;
+}
+
+.priorityMedium {
+  @apply bg-yellow-100 text-yellow-800 focus:ring-yellow-400;
+}
+
+.priorityLow {
+  @apply bg-green-100 text-green-800 focus:ring-green-400;
+}
+
+.priorityNone {
+  @apply bg-gray-100 text-gray-600 focus:ring-gray-400;
+}
+
+.priorityLoading {
+  @apply text-xs animate-pulse;
+}
+
+.cardError {
+  @apply mt-2 text-xs text-red-600 bg-red-50 px-2 py-1 rounded;
+}
+
+.docActions {
+  @apply mt-4 flex flex-wrap gap-2;
+}
+
 
