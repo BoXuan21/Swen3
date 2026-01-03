@@ -23,10 +23,12 @@ namespace Swen3.Services.Tests
         {
             ConvertAction?.Invoke();
 
-            if (!IsCleanupCalled)
-            {
-                File.WriteAllText(outputPath, "Mock TIFF Content");
-            }
+            var directory = Path.GetDirectoryName(outputPath);
+            var fileNameBase = Path.GetFileNameWithoutExtension(outputPath);
+
+            var dummyPagePath = Path.Combine(directory!, $"{fileNameBase}-0.tiff");
+
+            File.WriteAllText(dummyPagePath, "Mock TIFF Content");
         }
 
         protected override string RunOcrWithTesseract(string imagePath)

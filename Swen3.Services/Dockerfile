@@ -22,14 +22,12 @@ RUN apt-get update && \
     libgdiplus && \
     rm -rf /var/lib/apt/lists/*
 
-# Multi-arch support: detect architecture and create appropriate symlinks
 RUN ARCH=$(dpkg --print-architecture) && \
     if [ "$ARCH" = "amd64" ]; then \
         LIB_PATH="/usr/lib/x86_64-linux-gnu"; \
         ln -sf $LIB_PATH/libdl.so.2 $LIB_PATH/libdl.so 2>/dev/null || true; \
     elif [ "$ARCH" = "arm64" ]; then \
         LIB_PATH="/usr/lib/aarch64-linux-gnu"; \
-        # On ARM64 Bookworm, libdl is part of libc - create symlink for Tesseract.NET
         ln -sf $LIB_PATH/libc.so.6 $LIB_PATH/libdl.so.2 2>/dev/null || true; \
         ln -sf $LIB_PATH/libc.so.6 $LIB_PATH/libdl.so 2>/dev/null || true; \
         ln -sf $LIB_PATH/libc.so.6 /app/libdl.so 2>/dev/null || true; \

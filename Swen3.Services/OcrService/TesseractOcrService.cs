@@ -35,14 +35,31 @@ namespace Swen3.Services.OcrService
             _logger.LogInformation("Processing document {DocumentId} for OCR", message.DocumentId);
 
             var inputPdfPath = Path.Combine(Path.GetTempPath(), $"{message.DocumentId:N}_in.pdf");
-            var outputTiffPath = Path.Combine(Path.GetTempPath(), $"{message.DocumentId:N}_out.tiff");
 
-            String textResult;
+            var outputTiffPrefix = Path.Combine(Path.GetTempPath(), $"{message.DocumentId:N}_out");
+            var outputTiffPattern = $"{outputTiffPrefix}*.tiff";
+
+            String textResult = "";
+            List<string> tiffFiles = new List<string>();
+
             try
             {
                 await DownloadAndSavePdf(message.StoragePath, inputPdfPath, cancellationToken);
-                ConvertPdfToTiffWithImageMagick(inputPdfPath, outputTiffPath);
-                textResult = RunOcrWithTesseract(outputTiffPath);
+                ConvertPdfToTiffWithImageMagick(inputPdfPath, $"{outputTiffPrefix}.tiff");
+                tiffFiles = Directory.GetFiles(Path.GetTempPath(), $"{message.DocumentId:N}_out-*.tiff")
+                                    .OrderBy(f => f)
+                                    .ToList();
+                _logger.LogInformation("Number of pages: {Pages}", tiffFiles.Count());
+
+                var pages = new List<string>();
+                foreach (var tiffPath in tiffFiles)
+                {
+                    pages.Add(RunOcrWithTesseract(tiffPath));
+                }
+                textResult = string.Join(Environment.NewLine + "--- PAGE BREAK ---" + Environment.NewLine, pages);
+
+                _logger.LogInformation("Finished reading document!");
+
                 var updatedMessage = message with
                 {
                     Metadata = textResult
@@ -60,14 +77,19 @@ namespace Swen3.Services.OcrService
             finally
             {
                 DeleteFileIfExists(inputPdfPath);
-                DeleteFileIfExists(outputTiffPath);
+                foreach (var tiffPath in tiffFiles)
+                {
+                    DeleteFileIfExists(tiffPath);
+                }
             }
 
         }
 
         protected virtual void ConvertPdfToTiffWithImageMagick(string inputPath, string outputPath)
         {
-            string arguments = $"-density {ImageMagickDensity} \"{inputPath}[0]\" -compress Group4 \"{outputPath}\"";
+            string outputPathPattern = Path.ChangeExtension(outputPath, null) + "-%d" + Path.GetExtension(outputPath);
+
+            string arguments = $"-density {ImageMagickDensity} \"{inputPath}\" -compress Group4 \"{outputPathPattern}\"";
 
             var startInfo = new ProcessStartInfo
             {
@@ -78,6 +100,8 @@ namespace Swen3.Services.OcrService
                 RedirectStandardOutput = true,
                 RedirectStandardError = true
             };
+
+            _logger.LogInformation("Starting to convert PDF");
 
             using var process = Process.Start(startInfo);
 
@@ -94,9 +118,10 @@ namespace Swen3.Services.OcrService
                 throw new InvalidOperationException($"ImageMagick failed (Exit Code {process.ExitCode}). Error: {error}");
             }
 
-            if (!File.Exists(outputPath))
+            string filePrefix = Path.ChangeExtension(outputPath, null);
+            if (Directory.GetFiles(Path.GetTempPath(), $"{Path.GetFileName(filePrefix)}-*.tiff").Length == 0)
             {
-                throw new FileNotFoundException($"ImageMagick finished but failed to create output file: {outputPath}");
+                throw new FileNotFoundException($"ImageMagick finished but failed to create any output files with prefix: {filePrefix}");
             }
         }
 

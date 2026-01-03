@@ -54,40 +54,6 @@ export default function DocumentCard(doc: Document) {
     }
   };
 
-
-  const summarize = async (doc: Document) => {
-    try {
-      setSummarizing(true);
-      setSummaryContent(null);
-      setShowSummaryPopup(true);
-      setCurrentSummaryDocTitle(doc.title);
-      setError(null);
-
-      // Using the document ID in the request body
-      const response = await fetch(`${geminiEndpoint}/summarize`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(doc.metadata),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || `HTTP error! status: ${response.status}`);
-      }
-
-      const result = await response.json();
-      setSummaryContent(result.summaryText || 'No summary available.');
-
-    } catch (err) {
-      setSummaryContent(`Error: ${err instanceof Error ? err.message : 'Failed to fetch summary'}`);
-      setError(err instanceof Error ? err.message : 'Failed to get document summary');
-    } finally {
-      setSummarizing(false);
-    }
-  }
-
   const handleSummarize = async () => {
     try {
       setSummarizing(true);
