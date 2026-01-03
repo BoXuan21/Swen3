@@ -2,23 +2,10 @@
 
 import { useState, useEffect, useRef } from 'react';
 import styles from './page.module.css';
-
-interface Document {
-  id: string;
-  title: string;
-  fileName: string;
-  mimeType: string;
-  size: number;
-  uploadedAt: string;
-  metadata: string;
-  storageKey: string;
-}
-
-const MAX_FILE_BYTES = 25 * 1024 * 1024; // 25 MB
-const MAX_FILE_MB = MAX_FILE_BYTES / (1024 * 1024);
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? '';
-
-const buildApiUrl = (path: string) => `${API_BASE}${path}`;
+import { buildApiUrl } from '../utils/utils';
+import { CONSTANTS } from '../utils/constants';
+import { Document } from '../models/Document';
+import DocumentCard from '../components/DocumentCard';
 
 export default function Dashboard() {
   const [documents, setDocuments] = useState<Document[]>([]);
@@ -88,8 +75,8 @@ export default function Dashboard() {
         throw new Error('Please drop a PDF file.');
       }
 
-      if (selectedFile.size > MAX_FILE_BYTES) {
-        throw new Error(`File exceeds ${MAX_FILE_MB} MB limit.`);
+      if (selectedFile.size > CONSTANTS.MAX_FILE_BYTES) {
+        throw new Error(`File exceeds ${CONSTANTS.MAX_FILE_MB} MB limit.`);
       }
 
       const formData = new FormData();
@@ -127,62 +114,6 @@ export default function Dashboard() {
     };
   }, [previewUrl]);
 
-  // Delete document
-  const deleteDocument = async (id: string) => {
-    try {
-      const response = await fetch(`${documentsEndpoint}/${id}`, {
-        method: 'DELETE'
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      setDocuments(documents.filter(doc => doc.id !== id));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete document');
-    }
-  };
-
-  const summarize = async (doc: Document) => {
-    try {
-      setSummarizing(true);
-      setSummaryContent(null);
-      setShowSummaryPopup(true);
-      setCurrentSummaryDocTitle(doc.title);
-      setError(null);
-
-      // Using the document ID in the request body
-      const response = await fetch(`${geminiEndpoint}/summarize`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(doc.metadata),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || `HTTP error! status: ${response.status}`);
-      }
-
-      const result = await response.json();
-      setSummaryContent(result.candidates[0].content.parts[0].text || 'No summary available.');
-
-    } catch (err) {
-      setSummaryContent(`Error: ${err instanceof Error ? err.message : 'Failed to fetch summary'}`);
-      setError(err instanceof Error ? err.message : 'Failed to get document summary');
-    } finally {
-      setSummarizing(false);
-    }
-  }
-
-  const closeSummaryPopup = () => {
-    setShowSummaryPopup(false);
-    setSummaryContent(null);
-    setCurrentSummaryDocTitle(null);
-  };
-
   useEffect(() => {
     fetchDocuments();
   }, []);
@@ -201,8 +132,8 @@ export default function Dashboard() {
       return;
     }
 
-    if (file.size > MAX_FILE_BYTES) {
-      setError(`File exceeds ${MAX_FILE_MB} MB limit.`);
+    if (file.size > CONSTANTS.MAX_FILE_BYTES) {
+      setError(`File exceeds ${CONSTANTS.MAX_FILE_MB} MB limit.`);
       return;
     }
 
@@ -221,29 +152,7 @@ export default function Dashboard() {
     handleFileSelection(file ?? null);
   };
 
-  const fileSizeUsage = selectedFile ? (selectedFile.size / MAX_FILE_BYTES) * 100 : 0;
-
-  const handleDownload = async (id: string) => {
-    try {
-      const doc = documents.find(d => d.id === id);
-      const downloadUrl = buildApiUrl(`/api/Documents/${id}/content`);
-
-      const response = await fetch(downloadUrl);
-      if (!response.ok) throw new Error('Download failed');
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = doc?.fileName || 'document.pdf';
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to download document');
-    }
-  };
+  const fileSizeUsage = selectedFile ? (selectedFile.size / CONSTANTS.MAX_FILE_BYTES) * 100 : 0;
 
   const handlePreview = (id: string) => {
     console.log('Opening preview for document:', id);
@@ -300,7 +209,7 @@ export default function Dashboard() {
         {/* Add Document Form (omitted for brevity) */}
         {showUploadForm && (
           <div className={styles.formContainer}>
-            <h3 className={styles.formTitle}>Upload PDF (Max {MAX_FILE_MB} MB)</h3>
+            <h3 className={styles.formTitle}>Upload PDF (Max {CONSTANTS.MAX_FILE_MB} MB)</h3>
             <div className={styles.formGrid}>
               <input
                 type="text"
@@ -336,7 +245,7 @@ export default function Dashboard() {
                 Drag and drop your PDF here, or click to browse
               </p>
               <p className={styles.dropSubHint}>
-                Accepted format: PDF · Maximum size {MAX_FILE_MB} MB
+                Accepted format: PDF · Maximum size {CONSTANTS.MAX_FILE_MB} MB
               </p>
               {selectedFile && (
                 <div className={styles.fileInfo}>
@@ -414,92 +323,11 @@ export default function Dashboard() {
         ) : (
           <div className={styles.documentsGrid}>
             {documents.map((doc) => (
-              <div key={doc.id} className={styles.docCard}>
-                <h3 className={styles.docTitle}>{doc.title}</h3>
-                <div className={styles.docMeta}>
-                  <div>📁 {doc.fileName}</div>
-                  <div>📅 {new Date(doc.uploadedAt).toLocaleDateString()}</div>
-                  <div>🏷️ {doc.mimeType}</div>
-                  <div className={styles.sizePill}>
-                    {(doc.size / (1024 * 1024)).toFixed(2)} MB
-                  </div>
-                </div>
-
-                {/* Metadata / OCR Text Section */}
-                <div className={styles.metadataSection}>
-                  <div className={styles.metadataLabel}>
-                    📝 OCR Text
-                  </div>
-                  {doc.metadata && doc.metadata.trim() !== '' ? (
-                    <div className={styles.metadataContent}>
-                      {doc.metadata}
-                    </div>
-                  ) : (
-                    <div className={styles.metadataEmpty}>
-                      Kein OCR-Text verfügbar
-                    </div>
-                  )}
-                </div>
-
-                {/* Document Actions */}
-                <div className={styles.docActions}>
-                  <button
-                    onClick={() => summarize(doc)}
-                    className={styles.btnSummarize}
-                    disabled={summarizing}
-                  >
-                    📝 Summarize
-                  </button>
-                  <button
-                    onClick={() => handleDownload(doc.id)}
-                    className={styles.btnDownload}
-                  >
-                    ⬇️ Download
-                  </button>
-                  <button
-                    onClick={() => deleteDocument(doc.id)}
-                    className={styles.btnDelete}
-                  >
-                    🗑️ Delete
-                  </button>
-                </div>
-              </div>
+              <DocumentCard {...doc} />
             ))}
           </div>
         )}
       </div>
-
-      {/* Summary Popup / Modal */}
-      {showSummaryPopup && (
-        <div className={styles.modalOverlay}>
-          <div className={styles.modalContent}>
-            <div className={styles.modalHeader}>
-              <h2 className={styles.modalTitle}>
-                Summary for: **{currentSummaryDocTitle}**
-              </h2>
-              <button onClick={closeSummaryPopup} className={styles.modalCloseButton}>
-                &times;
-              </button>
-            </div>
-
-            <div className={styles.modalBody}>
-              {summarizing ? (
-                <div className={styles.loading}>Generating summary...</div>
-              ) : summaryContent ? (
-                <p className={styles.summaryText}>{summaryContent}</p>
-              ) : (
-                <p>Failed to load summary or no summary available.</p>
-              )}
-            </div>
-
-            <div className={styles.modalFooter}>
-              <button onClick={closeSummaryPopup} className={styles.buttonSecondary}>
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
