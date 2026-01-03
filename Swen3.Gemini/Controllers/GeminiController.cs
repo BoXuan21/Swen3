@@ -8,9 +8,9 @@ namespace Swen3.Gemini.Controllers
     public class GeminiController(GeminiService service) : ControllerBase
     {
         [HttpPost("summarize")]
-        public async Task<IActionResult> Summarize([FromBody] string req)
+        public async Task<IActionResult> Summarize([FromBody] string text)
         {
-            var result = await service.SendPromptAsync(req);
+            var result = await service.SendPromptAsync(text);
             return Ok(result);
         }
     }

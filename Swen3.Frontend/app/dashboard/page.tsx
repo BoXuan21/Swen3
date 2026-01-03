@@ -114,12 +114,6 @@ export default function Dashboard() {
     };
   }, [previewUrl]);
 
-  const closeSummaryPopup = () => {
-    setShowSummaryPopup(false);
-    setSummaryContent(null);
-    setCurrentSummaryDocTitle(null);
-  };
-
   useEffect(() => {
     fetchDocuments();
   }, []);
@@ -334,38 +328,6 @@ export default function Dashboard() {
           </div>
         )}
       </div>
-
-      {/* Summary Popup / Modal */}
-      {showSummaryPopup && (
-        <div className={styles.modalOverlay}>
-          <div className={styles.modalContent}>
-            <div className={styles.modalHeader}>
-              <h2 className={styles.modalTitle}>
-                Summary for: **{currentSummaryDocTitle}**
-              </h2>
-              <button onClick={closeSummaryPopup} className={styles.modalCloseButton}>
-                &times;
-              </button>
-            </div>
-
-            <div className={styles.modalBody}>
-              {summarizing ? (
-                <div className={styles.loading}>Generating summary...</div>
-              ) : summaryContent ? (
-                <p className={styles.summaryText}>{summaryContent}</p>
-              ) : (
-                <p>Failed to load summary or no summary available.</p>
-              )}
-            </div>
-
-            <div className={styles.modalFooter}>
-              <button onClick={closeSummaryPopup} className={styles.buttonSecondary}>
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

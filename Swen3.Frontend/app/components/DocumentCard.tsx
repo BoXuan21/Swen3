@@ -2,11 +2,12 @@ import styles from '../dashboard/page.module.css';
 import { useState, useEffect, useRef } from 'react';
 import { buildApiUrl } from '../utils/utils';
 import { Document } from '../models/Document';
+import SummaryPopup from './SummaryPopup';
 
 const geminiEndpoint = 'http://localhost:8090/api/Gemini';
 const documentsEndpoint = buildApiUrl('/api/Documents');
 
-function DocumentCard(doc: Document) {
+export default function DocumentCard(doc: Document) {
 
   const [error, setError] = useState<string | null>(null);
   const [showSummaryPopup, setShowSummaryPopup] = useState(false);
@@ -86,6 +87,30 @@ function DocumentCard(doc: Document) {
       setSummarizing(false);
     }
   }
+
+  const handleSummarize = async () => {
+    try {
+      setSummarizing(true);
+      setShowSummaryPopup(true); // Open popup immediately to show "Generating..."
+      setError(null);
+
+      const response = await fetch(`${geminiEndpoint}/summarize`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(doc.metadata), // Ensure your backend expects this format
+      });
+
+      if (!response.ok) throw new Error('Summarization failed');
+
+      const result = await response.json();
+      setSummaryContent(result.candidates[0].content.parts[0].text || 'No summary available.');
+    } catch (err) {
+      setSummaryContent(err instanceof Error ? err.message : 'Error fetching summary');
+    } finally {
+      setSummarizing(false);
+    }
+  };
+
   return (
     <div key={doc.id} className={styles.docCard}>
       <h3 className={styles.docTitle}>{doc.title}</h3>
@@ -117,11 +142,11 @@ function DocumentCard(doc: Document) {
       {/* Document Actions */}
       <div className={styles.docActions}>
         <button
-          onClick={() => summarize(doc)}
+          onClick={() => handleSummarize()}
           className={styles.btnSummarize}
           disabled={summarizing}
         >
-          📝 Summarize
+          {summarizing ? '⏳...' : '📝 Summarize'}
         </button>
         <button
           onClick={() => handleDownload(doc.id)}
@@ -135,9 +160,15 @@ function DocumentCard(doc: Document) {
         >
           🗑️ Delete
         </button>
+        {showSummaryPopup && (
+          <SummaryPopup
+            title={doc.title}
+            content={summaryContent}
+            isSummarizing={summarizing}
+            onClose={() => setShowSummaryPopup(false)}
+          />
+        )}
       </div>
     </div>
   );
 }
-
-export default DocumentCard;
