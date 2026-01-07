@@ -16,7 +16,7 @@ namespace Swen3.API.DAL
         {
             base.OnModelCreating(modelBuilder);
 
-            // Seed priority data
+            // when the database is created, the priority data will be seeded, user does not need to create these
             modelBuilder.Entity<Priority>().HasData(
                 new Priority { Id = 1, Name = "Not Very Important", Level = 1 },
                 new Priority { Id = 2, Name = "Important", Level = 2 },

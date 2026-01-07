@@ -71,9 +71,10 @@ namespace Swen3.API.Controllers
 
             IReadOnlyList<Guid>? documentIds = null;
 
-            // If a text query is provided, search Elasticsearch for matching document IDs
+            // full text search in Elasticsearch
             if (!string.IsNullOrWhiteSpace(query))
             {
+                //call the elasticsearch service to search for documents
                 documentIds = await _elasticsearchService.SearchAsync(query, cancellationToken);
                 _logger.LogInformation("Elasticsearch returned {Count} document IDs for query: {Query}", documentIds.Count, query);
 
@@ -171,6 +172,7 @@ namespace Swen3.API.Controllers
                 throw new ValidationException("Document data is required");
             }
 
+            //find the document in the database
             var document = await _repo.GetByIdAsync(id);
             if (document == null)
             {
@@ -184,7 +186,7 @@ namespace Swen3.API.Controllers
 
             await _repo.UpdateAsync(document);
 
-            // Re-fetch to get the updated Priority navigation property
+            // Re-fetch to get the updated Priority navigation property (Priority relationship)
             document = await _repo.GetByIdAsync(id);
             
             _logger.LogInformation("Successfully updated document with id: {DocumentId}", id);

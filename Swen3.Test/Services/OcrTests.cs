@@ -1,75 +1,60 @@
 using Moq;
 using Swen3.Services.OcrService;
 using Swen3.Shared.Messaging;
+using Swen3.Shared.Elasticsearch;
 using Swen3.Storage.MiniIo;
 using Swen3.Test;
 using Microsoft.Extensions.Logging;
-using Assert = NUnit.Framework.Assert; // Use NUnit Assert
+using Assert = NUnit.Framework.Assert;
 
 namespace Swen3.Services.Tests
 {
+    /// <summary>
+    /// Testable version of TesseractOcrService that mocks external dependencies
+    /// </summary>
     public class TestableTesseractOcrService : TesseractOcrService
     {
-        public Action ConvertAction { get; set; }
         public Func<string> OcrFunc { get; set; } = () => "Mock OCR Result";
-
         public bool IsCleanupCalled { get; private set; }
-        public bool IsFileSaved { get; private set; }
 
-        public TestableTesseractOcrService(ILogger<TesseractOcrService> logger, IDocumentStorageService storage, IMessagePublisher publisher)
-            : base(logger, storage, publisher) { }
+        public TestableTesseractOcrService(
+            ILogger<TesseractOcrService> logger, 
+            IDocumentStorageService storage, 
+            IMessagePublisher publisher,
+            IElasticsearchService elasticsearchService)
+            : base(logger, storage, publisher, elasticsearchService) { }
 
         protected override void ConvertPdfToTiffWithImageMagick(string inputPath, string outputPath)
         {
-            ConvertAction?.Invoke();
-
             var directory = Path.GetDirectoryName(outputPath);
             var fileNameBase = Path.GetFileNameWithoutExtension(outputPath);
-
             var dummyPagePath = Path.Combine(directory!, $"{fileNameBase}-0.tiff");
-
             File.WriteAllText(dummyPagePath, "Mock TIFF Content");
         }
 
-        protected override string RunOcrWithTesseract(string imagePath)
-        {
-            return OcrFunc();
-        }
+        protected override string RunOcrWithTesseract(string imagePath) => OcrFunc();
 
         protected override void DeleteFileIfExists(string path)
         {
             IsCleanupCalled = true;
-            return;
         }
 
         protected override async Task DownloadAndSavePdf(string objectKey, string localPath, CancellationToken cancellationToken)
         {
             await base.DownloadAndSavePdf(objectKey, localPath, cancellationToken);
-            IsFileSaved = true;
         }
     }
 
+    /// <summary>
+    /// Unit tests for OCR Worker Service with Elasticsearch integration
+    /// </summary>
     [TestFixture]
     public class TesseractOcrServiceTests
     {
         private OcrServiceMocks _mocks = null!;
         private TestableTesseractOcrService _service = null!;
         private DocumentUploadedMessage _testMessage = null!;
-
-        private const string ExpectedOcrResult = "Unit Test OCR Text";
-
-        private void VerifyLog(LogLevel level, string messageContains, Times times, Type? exceptionType = null)
-        {
-            _mocks.MockLogger.Verify(
-                x => x.Log(
-                    level,
-                    It.IsAny<EventId>(),
-                    It.Is<It.IsAnyType>((o, t) => o.ToString().Contains(messageContains)), // Checks the message content
-                    It.Is<Exception>(ex => exceptionType == null || ex.GetType() == exceptionType), // Checks exception type
-                    (Func<It.IsAnyType, Exception?, string>)It.IsAny<object>()),
-                times,
-                $"Expected log at {level} containing '{messageContains}' to be called {times}.");
-        }
+        private const string ExpectedOcrResult = "Invoice number 12345 for consulting services";
 
         [SetUp]
         public void Setup()
@@ -80,12 +65,13 @@ namespace Swen3.Services.Tests
             _service = new TestableTesseractOcrService(
                 logger.Object,
                 _mocks.MockStorage.Object,
-                _mocks.MockPublisher.Object
+                _mocks.MockPublisher.Object,
+                _mocks.MockElasticsearch.Object
             );
 
             _testMessage = new DocumentUploadedMessage(
                 DocumentId: Guid.NewGuid(),
-                FileName: "test-document.pdf",
+                FileName: "invoice-2024.pdf",
                 ContentType: "application/pdf",
                 UploadedAtUtc: DateTime.UtcNow,
                 StoragePath: "2025/12/05/key.pdf",
@@ -97,33 +83,83 @@ namespace Swen3.Services.Tests
 
             _mocks.SetupSuccessfulDownload();
             _service.OcrFunc = () => ExpectedOcrResult;
-            _service.ConvertAction = null;
         }
 
+        /// <summary>
+        /// TEST 1: Verify the complete OCR pipeline executes successfully
+        /// </summary>
         [Test]
-        public async Task ProcessDocumentForOcrAsync_Success_CallsAllStepsAndPublishesUpdatedMessage()
+        public async Task ProcessDocumentForOcrAsync_Success_CompletesAllSteps()
         {
             // Act
             await _service.ProcessDocumentForOcrAsync(_testMessage, CancellationToken.None);
 
-            // Assert
-
-            // 1. Verify MinIO Download was called
-            _mocks.MockStorage.Verify(s =>
-                s.DownloadAsync(_testMessage.StoragePath, It.IsAny<CancellationToken>()),
-                Times.Once, "DownloadAsync must be called to start the process.");
-
-            // 2. Verify Publisher was called with the CORRECT result (Metadata update)
+            // Assert - Verify all steps were executed
+            _mocks.MockStorage.Verify(s => s.DownloadAsync(_testMessage.StoragePath, It.IsAny<CancellationToken>()), Times.Once);
             _mocks.MockPublisher.Verify(p => p.PublishDocumentUploadedAsync(
-                // Assert that the message sent has the expected OCR result injected into the Metadata field
-                It.Is<DocumentUploadedMessage>(msg =>
-                    msg.DocumentId == _testMessage.DocumentId &&
-                    msg.Metadata == ExpectedOcrResult),
-                It.IsAny<string>(),
-                It.IsAny<string>()), Times.Once, "The updated message must be published.");
+                It.Is<DocumentUploadedMessage>(msg => msg.Metadata == ExpectedOcrResult),
+                It.IsAny<string>(), It.IsAny<string>()), Times.Once);
+            Assert.IsTrue(_service.IsCleanupCalled, "Cleanup should be called");
+        }
 
-            // 3. Verify Cleanup was called
-            Assert.IsTrue(_service.IsCleanupCalled, "Cleanup (DeleteFileIfExists) must be called in the finally block.");
+        /// <summary>
+        /// This tests the Elasticsearch integration in the worker service
+        /// </summary>
+        [Test]
+        public async Task ProcessDocumentForOcrAsync_Success_IndexesInElasticsearch()
+        {
+            // Act
+            await _service.ProcessDocumentForOcrAsync(_testMessage, CancellationToken.None);
+
+            // Assert - Verify Elasticsearch was called with correct parameters
+            _mocks.MockElasticsearch.Verify(es => es.IndexDocumentAsync(
+                _testMessage.DocumentId,
+                ExpectedOcrResult,
+                _testMessage.FileName,
+                It.IsAny<CancellationToken>()),
+                Times.Once,
+                "Elasticsearch IndexDocumentAsync must be called with OCR result");
+        }
+
+        /// <summary>
+        /// TEST 3: Verify processing continues even if Elasticsearch fails
+        /// </summary>
+        [Test]
+        public async Task ProcessDocumentForOcrAsync_ElasticsearchFails_StillPublishesMessage()
+        {
+            // Arrange - Make Elasticsearch fail
+            _mocks.MockElasticsearch.Setup(es => es.IndexDocumentAsync(
+                It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(false);
+
+            // Act
+            await _service.ProcessDocumentForOcrAsync(_testMessage, CancellationToken.None);
+
+            // Assert - Message should still be published
+            _mocks.MockPublisher.Verify(p => p.PublishDocumentUploadedAsync(
+                It.IsAny<DocumentUploadedMessage>(), It.IsAny<string>(), It.IsAny<string>()), 
+                Times.Once);
+        }
+
+        /// <summary>
+        /// TEST 4: Verify OCR content is correctly captured and indexed
+        /// </summary>
+        [Test]
+        public async Task ProcessDocumentForOcrAsync_CapturesCorrectContent()
+        {
+            // Arrange
+            string? capturedContent = null;
+            _mocks.MockElasticsearch.Setup(es => es.IndexDocumentAsync(
+                It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .Callback<Guid, string, string, CancellationToken>((id, content, filename, ct) => capturedContent = content)
+                .ReturnsAsync(true);
+
+            // Act
+            await _service.ProcessDocumentForOcrAsync(_testMessage, CancellationToken.None);
+
+            // Assert
+            Assert.That(capturedContent, Is.EqualTo(ExpectedOcrResult));
+            Assert.That(capturedContent, Does.Contain("Invoice"));
         }
     }
 }

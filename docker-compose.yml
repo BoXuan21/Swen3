@@ -58,7 +58,7 @@ services:
       - Minio__BucketName=documents
       - Minio__UseSsl=false
       - Elasticsearch__Url=http://elasticsearch:9200
-      - Elasticsearch__IndexName=documents
+      - Elasticsearch__IndexName=documents #index name for the elasticsearch container maps to the documents table in the database
     depends_on:
       db:
         condition: service_started
@@ -148,9 +148,9 @@ services:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
     container_name: swen3-elasticsearch
     environment:
-      - discovery.type=single-node
-      - xpack.security.enabled=false
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - discovery.type=single-node #no cluster, just one node
+      - xpack.security.enabled=false # dissables authentication
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m" # sets the memory for the elasticsearch container
     ports:
       - "9200:9200"
     volumes:

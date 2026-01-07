@@ -1,12 +1,15 @@
 using Moq;
-using Swen3.Shared.Messaging;
-using Swen3.Shared.Elasticsearch;
-using Swen3.Storage.MiniIo;
 using Swen3.Services.OcrService;
+using Swen3.Shared.Messaging;
+using Swen3.Storage.MiniIo;
 using Microsoft.Extensions.Logging;
+using Swen3.Shared.Elasticsearch;
 
 namespace Swen3.Test;
-// Utility class to easily set up standard mock dependencies
+
+/// <summary>
+/// Mock setup for OCR Worker Service tests
+/// </summary>
 public class OcrServiceMocks
 {
     public Mock<ILogger<TesseractOcrService>> MockLogger { get; }
@@ -20,13 +23,10 @@ public class OcrServiceMocks
         MockStorage = new Mock<IDocumentStorageService>();
         MockPublisher = new Mock<IMessagePublisher>();
         MockElasticsearch = new Mock<IElasticsearchService>();
-        
-        // Default: Elasticsearch indexing succeeds
+
+        // Default: Elasticsearch succeeds
         MockElasticsearch.Setup(es => es.IndexDocumentAsync(
-            It.IsAny<Guid>(),
-            It.IsAny<string>(),
-            It.IsAny<string>(),
-            It.IsAny<CancellationToken>()))
+            It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
     }
 
@@ -40,16 +40,9 @@ public class OcrServiceMocks
         );
     }
 
-    /// <summary>
-    /// Sets up the storage mock to simulate a successful PDF download.
-    /// </summary>
     public void SetupSuccessfulDownload()
     {
-        // Create a non-empty, disposable MemoryStream to simulate the PDF file content.
-        var mockStream = new MemoryStream(new byte[] { 0x01, 0x02, 0x03 });
-
-        MockStorage.Setup(s =>
-            s.DownloadAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(mockStream);
+        MockStorage.Setup(s => s.DownloadAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new MemoryStream(new byte[] { 0x25, 0x50, 0x44, 0x46 })); // PDF magic bytes
     }
 }
