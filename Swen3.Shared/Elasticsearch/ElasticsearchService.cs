@@ -10,7 +10,7 @@ namespace Swen3.Shared.Elasticsearch;
 /// </summary>
 public class ElasticsearchService : IElasticsearchService
 {
-    private readonly IElasticClient _client;
+    private readonly IElasticClient _client; //elastic client to interact with elasticsearch
     private readonly ElasticsearchOptions _options;
     private readonly ILogger<ElasticsearchService> _logger;
 
@@ -20,14 +20,14 @@ public class ElasticsearchService : IElasticsearchService
         _logger = logger;
 
         var settings = new ConnectionSettings(new Uri(_options.Url))
-            .DefaultIndex(_options.IndexName)
-            .EnableDebugMode();
+            .DefaultIndex(_options.IndexName) //use documents index name for the elasticsearch container maps to the documents table in the database
+            .EnableDebugMode(); //detailed error messages for debugging
 
         _client = new ElasticClient(settings);
     }
 
     /// <summary>
-    /// Constructor for testing with injected client.
+    /// Constructor for testing with injected client (for use in tests) -> to not use real elasticsearch for testing
     /// </summary>
     public ElasticsearchService(IElasticClient client, IOptions<ElasticsearchOptions> options, ILogger<ElasticsearchService> logger)
     {
@@ -36,16 +36,23 @@ public class ElasticsearchService : IElasticsearchService
         _logger = logger;
     }
 
+    /// <summary>
+    /// saves a document to Elasticsearch so it can be searched later. Here's what each part does:
+    /// - Id: The unique identifier of the document (matches PostgreSQL Document.Id).
+    /// - Content: The OCR-extracted text content from the document.
+    /// - FileName: The original file name of the document.
+    /// - IndexedAt: The timestamp when the document was indexed.
+    /// </summary>
     public async Task<bool> IndexDocumentAsync(Guid id, string content, string fileName, CancellationToken cancellationToken = default)
     {
         try
         {
             var document = new DocumentIndex
             {
-                Id = id,
-                Content = content,
-                FileName = fileName,
-                IndexedAt = DateTime.UtcNow
+                Id = id, //unique identifier of the document
+                Content = content, //OCR-extracted text content from the document
+                FileName = fileName, //original file name of the document
+                IndexedAt = DateTime.UtcNow //timestamp when the document was indexed
             };
 
             var response = await _client.IndexAsync(document, idx => idx
@@ -69,6 +76,9 @@ public class ElasticsearchService : IElasticsearchService
         }
     }
 
+    /// <summary>
+    /// Searches for documents matching the given query.
+    /// </summary>
     public async Task<IReadOnlyList<Guid>> SearchAsync(string query, CancellationToken cancellationToken = default)
     {
         try
@@ -81,15 +91,15 @@ public class ElasticsearchService : IElasticsearchService
             var response = await _client.SearchAsync<DocumentIndex>(s => s
                 .Index(_options.IndexName)
                 .Query(q => q
-                    .MultiMatch(m => m
-                        .Fields(f => f
+                    .MultiMatch(m => m // multi-match query to search in multiple fields
+                        .Fields(f => f // fields to search in
                             .Field(doc => doc.Content)
                             .Field(doc => doc.FileName))
                         .Query(query)
-                        .Fuzziness(Fuzziness.Auto)
+                        .Fuzziness(Fuzziness.Auto) //auto-detect the best fuzziness level for the query/ typos
                     )
                 )
-                .Size(100), cancellationToken);
+                .Size(100), cancellationToken); // limit the number of results to 100
 
             if (!response.IsValid)
             {

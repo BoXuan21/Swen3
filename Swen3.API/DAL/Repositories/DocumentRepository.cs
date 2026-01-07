@@ -79,6 +79,7 @@ namespace Swen3.API.DAL.Repositories
                 _logger.LogInformation("Searching documents with priorityId: {PriorityId}, documentIds count: {Count}", 
                     priorityId, documentIds?.Count() ?? 0);
 
+                //starts with all documents
                 var query = _ctx.Documents
                     .Include(d => d.Priority)
                     .AsQueryable();
@@ -95,7 +96,7 @@ namespace Swen3.API.DAL.Repositories
                 {
                     query = query.Where(d => d.PriorityId == priorityId.Value);
                 }
-
+                // Execute and return
                 var documents = await query
                     .OrderByDescending(d => d.UploadedAt)
                     .ToListAsync();

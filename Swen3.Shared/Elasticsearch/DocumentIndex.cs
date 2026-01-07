@@ -24,5 +24,10 @@ public class DocumentIndex
     /// Timestamp when the document was indexed.
     /// </summary>
     public DateTime IndexedAt { get; set; } = DateTime.UtcNow;
+
+    /// <summary>
+    /// Elasticsearch stores ONLY what needs to be searched
+    /// PostgreSQL stores metadata, relationships, etc.
+    /// </summary>
 }
 

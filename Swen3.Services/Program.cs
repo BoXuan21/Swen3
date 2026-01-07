@@ -13,12 +13,15 @@ namespace Swen3.Services
         {
             var builder = Host.CreateApplicationBuilder(args);
 
+            // RabbitMQ configuration
             builder.Services.AddSingleton<IRabbitMqService, RabbitMqService>();
             builder.Services.AddSingleton<IMessagePublisher, RabbitMqPublisher>();
             builder.Services.AddHostedService<OcrConsumer>();
 
+            // OCR service configuration
             builder.Services.AddScoped<IOcrService, TesseractOcrService>();
 
+            // Minio configuration
             builder.Services
                 .AddOptions<MinioOptions>()
                 .Bind(builder.Configuration.GetSection("Minio"))

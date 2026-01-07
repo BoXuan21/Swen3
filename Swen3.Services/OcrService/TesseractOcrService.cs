@@ -14,6 +14,7 @@ namespace Swen3.Services.OcrService
         private readonly IMessagePublisher _publisher;
         private readonly IElasticsearchService _elasticsearchService;
 
+        // Tesseract OCR Configuration
         private const string TessDataPath = "/usr/share/tesseract-ocr/5/tessdata";
         private const string Language = "eng";
         private const string ResultQueueName = "RESULT_QUEUE";
@@ -33,7 +34,7 @@ namespace Swen3.Services.OcrService
             _logger = logger;
             _storage = storage;
             _publisher = publisher;
-            _elasticsearchService = elasticsearchService;
+            _elasticsearchService = elasticsearchService; //elasticsearch service to index the OCR text in Elasticsearch for full-text search
             _logger.LogInformation("OcrService initialized!");
         }
 
@@ -43,6 +44,7 @@ namespace Swen3.Services.OcrService
 
             var inputPdfPath = Path.Combine(Path.GetTempPath(), $"{message.DocumentId:N}_in.pdf");
 
+            // phase 1: convert the PDF to TIFF files
             var outputTiffPrefix = Path.Combine(Path.GetTempPath(), $"{message.DocumentId:N}_out");
             var outputTiffPattern = $"{outputTiffPrefix}*.tiff";
 
@@ -51,27 +53,32 @@ namespace Swen3.Services.OcrService
 
             try
             {
+                //phase 2: download the PDF from MinIO and save it to a temporary file
                 await DownloadAndSavePdf(message.StoragePath, inputPdfPath, cancellationToken);
+                //phase 3: convert the PDF to TIFF files
                 ConvertPdfToTiffWithImageMagick(inputPdfPath, $"{outputTiffPrefix}.tiff");
+                //phase 4: get the list of TIFF files
                 tiffFiles = Directory.GetFiles(Path.GetTempPath(), $"{message.DocumentId:N}_out-*.tiff")
                                     .OrderBy(f => f)
                                     .ToList();
-                _logger.LogInformation("Number of pages: {Pages}", tiffFiles.Count());
-
+                _logger.LogInformation("Number of pages: {Pages}", tiffFiles.Count()); //log the number of pages in the document
+               
+               //phase 5: run OCR on each TIFF file
                 var pages = new List<string>();
                 foreach (var tiffPath in tiffFiles)
                 {
                     pages.Add(RunOcrWithTesseract(tiffPath));
                 }
+                //phase 6: combine the OCR text from each page
                 textResult = string.Join(Environment.NewLine + "--- PAGE BREAK ---" + Environment.NewLine, pages);
 
                 _logger.LogInformation("Finished reading document!");
 
                 // Index the OCR text in Elasticsearch for full-text search
                 var indexed = await _elasticsearchService.IndexDocumentAsync(
-                    message.DocumentId,
-                    textResult,
-                    message.FileName,
+                    message.DocumentId, //links to postgres document table
+                    textResult, //OCR text from the document
+                    message.FileName, //original file name of the document
                     cancellationToken);
 
                 if (indexed)
@@ -83,6 +90,7 @@ namespace Swen3.Services.OcrService
                     _logger.LogWarning("Failed to index document {DocumentId} in Elasticsearch", message.DocumentId);
                 }
 
+                //phase 7: publish the OCR text to the result queue
                 var updatedMessage = message with
                 {
                     Metadata = textResult
@@ -99,6 +107,7 @@ namespace Swen3.Services.OcrService
             }
             finally
             {
+                //phase 8: delete the temporary files/ cleanup
                 DeleteFileIfExists(inputPdfPath);
                 foreach (var tiffPath in tiffFiles)
                 {
