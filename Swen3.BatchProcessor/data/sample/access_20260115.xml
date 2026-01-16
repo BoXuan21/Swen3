@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<AccessLog generatedAt="2026-01-15T23:59:59Z" systemName="ExternalPortal">
+  <Entries>
+    <Entry>
+      <DocumentId>00000000-0000-0000-0000-000000000001</DocumentId>
+      <AccessCount>42</AccessCount>
+      <AccessDate>2026-01-15</AccessDate>
+      <Source>WebPortal</Source>
+    </Entry>
+    <Entry>
+      <DocumentId>00000000-0000-0000-0000-000000000002</DocumentId>
+      <AccessCount>17</AccessCount>
+      <AccessDate>2026-01-15</AccessDate>
+      <Source>MobileApp</Source>
+    </Entry>
+  </Entries>
+</AccessLog>
