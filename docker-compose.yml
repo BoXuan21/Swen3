@@ -162,6 +162,27 @@ services:
       retries: 5
     restart: unless-stopped
 
+  batchprocessor:
+    build:
+      context: .
+      dockerfile: Swen3.BatchProcessor/Dockerfile
+    container_name: swen3-batchprocessor
+    environment:
+      - DOTNET_ENVIRONMENT=Production
+      - ConnectionStrings__DefaultConnection=Host=db;Port=5432;Database=swen_db;Username=swen3;Password=swen3pass
+      - BatchProcessor__InputFolder=/app/data/input
+      - BatchProcessor__ArchiveFolder=/app/data/archive
+      - BatchProcessor__FilePattern=access_*.xml
+      - BatchProcessor__CronSchedule=0 0 1 * * ?
+      - BatchProcessor__DeleteAfterProcessing=false
+    volumes:
+      - batchprocessor_input:/app/data/input
+      - batchprocessor_archive:/app/data/archive
+    depends_on:
+      db:
+        condition: service_started
+    restart: unless-stopped
+
 volumes:
   postgres_data:
     driver: local
@@ -170,4 +191,8 @@ volumes:
   minio_data:
     driver: local
   elasticsearch_data:
+    driver: local
+  batchprocessor_input:
+    driver: local
+  batchprocessor_archive:
     driver: local

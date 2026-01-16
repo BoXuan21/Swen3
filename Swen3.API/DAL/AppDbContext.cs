@@ -11,6 +11,7 @@ namespace Swen3.API.DAL
 
         public DbSet<Document> Documents => Set<Document>();
         public DbSet<Priority> Priorities => Set<Priority>();
+        public DbSet<DocumentAccessLog> DocumentAccessLogs => Set<DocumentAccessLog>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -22,6 +23,21 @@ namespace Swen3.API.DAL
                 new Priority { Id = 2, Name = "Important", Level = 2 },
                 new Priority { Id = 3, Name = "Very Important", Level = 3 }
             );
+
+            // Configure DocumentAccessLog entity
+            modelBuilder.Entity<DocumentAccessLog>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                
+                // Unique constraint: one record per document per day
+                entity.HasIndex(e => new { e.DocumentId, e.AccessDate }).IsUnique();
+                
+                // Foreign key to Document
+                entity.HasOne(e => e.Document)
+                    .WithMany()
+                    .HasForeignKey(e => e.DocumentId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
         }
     }
 }
