@@ -6,6 +6,7 @@ export interface Document {
   size: number;
   uploadedAt: string;
   metadata: string;
+  summary: string;
   storageKey: string;
   priorityId: number | null;
   priorityName: string | null;

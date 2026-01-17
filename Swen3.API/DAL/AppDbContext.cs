@@ -1,7 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Swen3.API.DAL.Models;
-using System.Collections.Generic;
-using System.Reflection.Emit;
 
 namespace Swen3.API.DAL
 {

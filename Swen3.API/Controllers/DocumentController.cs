@@ -22,10 +22,10 @@ namespace Swen3.API.Controllers
         private readonly IElasticsearchService _elasticsearchService;
 
         public DocumentsController(
-            IDocumentRepository repo, 
-            IMapper mapper, 
-            ILogger<DocumentsController> logger, 
-            IMessagePublisher publisher, 
+            IDocumentRepository repo,
+            IMapper mapper,
+            ILogger<DocumentsController> logger,
+            IMessagePublisher publisher,
             IDocumentStorageService storage,
             IElasticsearchService elasticsearchService)
         {
@@ -150,6 +150,7 @@ namespace Swen3.API.Controllers
                     UploadedAtUtc: DateTime.UtcNow,
                     StoragePath: doc.StorageKey,
                     Metadata: "",
+                    Summary: "",
                     CorrelationId: Guid.NewGuid().ToString(),
                     TenantId: null,
                     Version: 1
@@ -188,7 +189,7 @@ namespace Swen3.API.Controllers
 
             // Re-fetch to get the updated Priority navigation property (Priority relationship)
             document = await _repo.GetByIdAsync(id);
-            
+
             _logger.LogInformation("Successfully updated document with id: {DocumentId}", id);
             var updatedDto = _mapper.Map<DocumentDto>(document);
 
@@ -213,7 +214,7 @@ namespace Swen3.API.Controllers
         public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
         {
             _logger.LogInformation("DELETE /api/documents/{DocumentId} - Deleting document", id);
-            
+
             // Get document to retrieve storage key
             var document = await _repo.GetByIdAsync(id);
             if (document == null)
@@ -223,10 +224,10 @@ namespace Swen3.API.Controllers
 
             // Delete from MinIO first
             await _storage.DeleteAsync(document.StorageKey, cancellationToken);
-            
+
             // Then delete from database
             await _repo.DeleteAsync(id);
-            
+
             _logger.LogInformation("Successfully deleted document with id: {DocumentId} from both storage and database", id);
             return NoContent();
         }

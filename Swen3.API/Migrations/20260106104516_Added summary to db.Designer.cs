@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Swen3.API.DAL;
@@ -11,9 +12,11 @@ using Swen3.API.DAL;
 namespace Swen3.API.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260106104516_Added summary to db")]
+    partial class Addedsummarytodb
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -68,41 +71,6 @@ namespace Swen3.API.Migrations
                     b.ToTable("Documents");
                 });
 
-            modelBuilder.Entity("Swen3.API.DAL.Models.DocumentAccessLog", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("AccessCount")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("AccessDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("DocumentId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("LastUpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Sources")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("DocumentId", "AccessDate")
-                        .IsUnique();
-
-                    b.ToTable("DocumentAccessLogs");
-                });
-
             modelBuilder.Entity("Swen3.API.DAL.Models.Priority", b =>
                 {
                     b.Property<int>("Id")
@@ -150,17 +118,6 @@ namespace Swen3.API.Migrations
                         .HasForeignKey("PriorityId");
 
                     b.Navigation("Priority");
-                });
-
-            modelBuilder.Entity("Swen3.API.DAL.Models.DocumentAccessLog", b =>
-                {
-                    b.HasOne("Swen3.API.DAL.Models.Document", "Document")
-                        .WithMany()
-                        .HasForeignKey("DocumentId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Document");
                 });
 
             modelBuilder.Entity("Swen3.API.DAL.Models.Priority", b =>

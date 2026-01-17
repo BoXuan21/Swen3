@@ -1,17 +1,18 @@
-'use client'; // Required for Portals and useEffect
+'use client';
 
 import { createPortal } from "react-dom";
 import { useEffect, useState } from "react";
-import styles from "../dashboard/page.module.css"; // Ensure path is correct
+import styles from "../dashboard/page.module.css";
+import { Document } from "../models/Document";
 
 interface SummaryPopupProps {
-  title: string | null;
-  content: string | null;
+  document: Document;
+  content: string | null; // This is the content passed from DocumentCard
   isSummarizing: boolean;
   onClose: () => void;
 }
 
-export default function SummaryPopup({ title, content, isSummarizing, onClose }: SummaryPopupProps) {
+export default function SummaryPopup({ document: doc, content, isSummarizing, onClose }: SummaryPopupProps) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -22,12 +23,14 @@ export default function SummaryPopup({ title, content, isSummarizing, onClose }:
 
   if (!mounted) return null;
 
+  const hasSummary = doc.summary !== "" && doc.summary !== null;
+
   return createPortal(
     <div className={styles.modalOverlay} onClick={onClose}>
       <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
         <div className={styles.modalHeader}>
           <h2 className={styles.modalTitle}>
-            Summary for: <strong>{title}</strong>
+            Summary for: <strong>{doc.title}</strong>
           </h2>
           <button onClick={onClose} className={styles.modalCloseButton}>
             &times;

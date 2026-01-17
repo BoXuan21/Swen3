@@ -3,10 +3,16 @@ using System.Text.Json;
 
 namespace Swen3.Gemini.Services
 {
-    public class GeminiService
+    public class GeminiService : IGeminiService
     {
-        private readonly HttpClient _http = new();
-        private readonly string _apiKey = Environment.GetEnvironmentVariable("GEMINI_API_KEY") ?? throw new Exception("API key missing");
+        private readonly HttpClient _http;
+        private readonly string _apiKey;
+
+        public GeminiService(HttpClient http, IConfiguration config)
+        {
+            _http = http;
+            _apiKey = config["GEMINI_API_KEY"] ?? throw new Exception("API key missing");
+        }
 
         public async Task<string> SendPromptAsync(string text)
         {
@@ -43,4 +49,3 @@ namespace Swen3.Gemini.Services
         }
     }
 }
-

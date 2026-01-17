@@ -6,6 +6,8 @@ using Swen3.API.DAL.Mapping;
 using Swen3.API.Middleware;
 using Swen3.Storage.MiniIo;
 using Swen3.API.Messaging;
+using Swen3.Gemini.Services;
+using DotNetEnv;
 
 namespace Swen3.API
 {
@@ -13,6 +15,7 @@ namespace Swen3.API
     {
         public static void Main(string[] args)
         {
+            Env.Load();
             var builder = WebApplication.CreateBuilder(args);
             builder.Services.AddSwenDal(builder.Configuration);
             builder.Logging.ClearProviders();
@@ -45,6 +48,12 @@ namespace Swen3.API
             builder.Services.AddSingleton(sp => sp.GetRequiredService<IOptions<RabbitMqConfiguration>>().Value);
             builder.Services.AddSingleton<IRabbitMqService, RabbitMqService>();
             builder.Services.AddSingleton<IMessagePublisher, RabbitMqPublisher>();
+            builder.Services.AddHttpClient<IGeminiService, GeminiService>((serviceProvider, client) =>
+            {
+                var config = serviceProvider.GetRequiredService<IConfiguration>();
+            });
+
+            Console.WriteLine($"DEBUG: Key is {(string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GEMINI_API_KEY")) ? "MISSING" : "FOUND")}");
 
             builder.Services.AddHostedService<ResultConsumer>();
             builder.Services.AddControllers();
