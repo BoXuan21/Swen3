@@ -20,21 +20,14 @@ export default function Dashboard() {
   const [uploadMessage, setUploadMessage] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const [previewDocId, setPreviewDocId] = useState<string | null>(null);
 
   // Search and filter state
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedPriorityFilter, setSelectedPriorityFilter] = useState<number | null>(null);
   const [searching, setSearching] = useState(false);
 
-  const [showSummaryPopup, setShowSummaryPopup] = useState(false);
-  const [summaryContent, setSummaryContent] = useState<string | null>(null);
-  const [summarizing, setSummarizing] = useState(false);
-  const [currentSummaryDocTitle, setCurrentSummaryDocTitle] = useState<string | null>(null);
-
   const documentsEndpoint = buildApiUrl('/api/Documents');
   const prioritiesEndpoint = buildApiUrl('/api/Priorities');
-  const geminiEndpoint = buildApiUrl('http://localhost:8090/api/Gemini');
 
   // Fetch priorities from API
   const fetchPriorities = async () => {
@@ -84,11 +77,11 @@ export default function Dashboard() {
 
       const searchUrl = `${documentsEndpoint}/search?${params.toString()}`;
       const response = await fetch(searchUrl);
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       const data = await response.json();
       setDocuments(data);
     } catch (err) {
@@ -107,7 +100,7 @@ export default function Dashboard() {
 
   // Handle document update (for priority changes)
   const handleDocumentUpdate = (updatedDoc: Document) => {
-    setDocuments(prevDocs => 
+    setDocuments(prevDocs =>
       prevDocs.map(doc => doc.id === updatedDoc.id ? updatedDoc : doc)
     );
   };
@@ -219,16 +212,6 @@ export default function Dashboard() {
   };
 
   const fileSizeUsage = selectedFile ? (selectedFile.size / CONSTANTS.MAX_FILE_BYTES) * 100 : 0;
-
-  const handlePreview = (id: string) => {
-    console.log('Opening preview for document:', id);
-    setPreviewDocId(id);
-  };
-
-  const closePreview = () => {
-    console.log('Closing preview');
-    setPreviewDocId(null);
-  };
 
   return (
     <div className={styles.root}>
@@ -430,9 +413,9 @@ export default function Dashboard() {
         ) : (
           <div className={styles.documentsGrid}>
             {documents.map((doc) => (
-              <DocumentCard 
+              <DocumentCard
                 key={doc.id}
-                document={doc} 
+                document={doc}
                 priorities={priorities}
                 onDocumentUpdate={handleDocumentUpdate}
               />

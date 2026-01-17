@@ -76,7 +76,7 @@ namespace Swen3.API.DAL.Repositories
         {
             try
             {
-                _logger.LogInformation("Searching documents with priorityId: {PriorityId}, documentIds count: {Count}", 
+                _logger.LogInformation("Searching documents with priorityId: {PriorityId}, documentIds count: {Count}",
                     priorityId, documentIds?.Count() ?? 0);
 
                 var query = _ctx.Documents
@@ -186,6 +186,39 @@ namespace Swen3.API.DAL.Repositories
             {
                 _logger.LogError(ex, "Unexpected error while deleting document with id: {DocumentId}", id);
                 throw new RepositoryException("Failed to delete document", ex);
+            }
+        }
+
+        public async Task UpdateSummaryAsync(Guid id, string summary)
+        {
+            try
+            {
+                var doc = await _ctx.Documents.FirstOrDefaultAsync(d => d.Id == id);
+                if (doc == null)
+                {
+                    throw new RepositoryException("Document not found");
+                }
+                doc.Summary = summary;
+                await _ctx.SaveChangesAsync();
+                _logger.LogInformation("Updating document with id: {DocumentId}", doc.Id);
+                _ctx.Documents.Update(doc);
+                await _ctx.SaveChangesAsync();
+                _logger.LogInformation("Successfully updated document with id: {DocumentId}", doc.Id);
+            }
+            catch (DbUpdateConcurrencyException ex)
+            {
+                _logger.LogWarning(ex, "Concurrency conflict while updating document with id: {DocumentId}", id);
+                throw new RepositoryException("Document was modified by another operation", ex);
+            }
+            catch (DbUpdateException ex)
+            {
+                _logger.LogError(ex, "Database error while updating document with id: {DocumentId}", id);
+                throw new RepositoryException("Failed to update document in database", ex);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error while updating document with id: {DocumentId}", id);
+                throw new RepositoryException("Failed to update document", ex);
             }
         }
     }

@@ -4,7 +4,7 @@ import { buildApiUrl } from '../utils/utils';
 import { Document, Priority } from '../models/Document';
 import SummaryPopup from './SummaryPopup';
 
-const geminiEndpoint = 'http://localhost:8090/api/Gemini';
+const geminiEndpoint = buildApiUrl('/api/Gemini');
 const documentsEndpoint = buildApiUrl('/api/Documents');
 
 interface DocumentCardProps {
@@ -87,21 +87,40 @@ export default function DocumentCard({ document: doc, priorities, onDocumentUpda
   };
 
   const handleSummarize = async () => {
+    if (doc.summary && doc.summary.trim() !== '') {
+      setSummaryContent(doc.summary);
+      setShowSummaryPopup(true);
+      return;
+    }
+
     try {
       setSummarizing(true);
       setShowSummaryPopup(true);
       setError(null);
+      setSummaryContent(null);
+
+      const payload = {
+        documentId: doc.id,
+        textToSummarize: doc.metadata
+      };
 
       const response = await fetch(`${geminiEndpoint}/summarize`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(doc.metadata),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) throw new Error('Summarization failed');
 
-      const result = await response.json();
-      setSummaryContent(result.candidates[0].content.parts[0].text || 'No summary available.');
+      const result = await response.text();
+
+      setSummaryContent(result || 'No summary available.');
+
+      onDocumentUpdate({
+        ...doc,
+        summary: result
+      });
+
     } catch (err) {
       setSummaryContent(err instanceof Error ? err.message : 'Error fetching summary');
     } finally {
@@ -193,7 +212,7 @@ export default function DocumentCard({ document: doc, priorities, onDocumentUpda
         </button>
         {showSummaryPopup && (
           <SummaryPopup
-            title={doc.title}
+            document={doc}
             content={summaryContent}
             isSummarizing={summarizing}
             onClose={() => setShowSummaryPopup(false)}

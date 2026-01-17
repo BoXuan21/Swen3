@@ -11,5 +11,6 @@ namespace Swen3.API.DAL.Interfaces
         Task AddAsync(Document doc);
         Task UpdateAsync(Document doc);
         Task DeleteAsync(Guid id);
+        Task UpdateSummaryAsync(Guid id, string summary);
     }
 }

@@ -6,6 +6,7 @@ WORKDIR /src
 COPY Swen3.API/Swen3.API.csproj Swen3.API/
 COPY Swen3.Shared/Swen3.Shared.csproj Swen3.Shared/
 COPY Swen3.Storage/Swen3.Storage.csproj Swen3.Storage/
+COPY Swen3.Gemini/Swen3.Gemini.csproj Swen3.Gemini/
 RUN dotnet restore "Swen3.API/Swen3.API.csproj"
 
 # Copy the rest of the source code
