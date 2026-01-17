@@ -13,7 +13,7 @@
         public string Summary { get; set; } = "";
 
         // Priority relationship
-        public int? PriorityId { get; set; }
+        public int? PriorityId { get; set; } //allows a document to not have a priority
         public Priority? Priority { get; set; }
     }
 }

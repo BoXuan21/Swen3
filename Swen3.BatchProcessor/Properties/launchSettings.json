@@ -1,0 +1,11 @@
+{
+  "profiles": {
+    "Swen3.BatchProcessor": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development"
+      }
+    }
+  }
+}
+
