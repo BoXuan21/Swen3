@@ -18,8 +18,8 @@ namespace Swen3.Services.Tests
         public bool IsCleanupCalled { get; private set; }
 
         public TestableTesseractOcrService(
-            ILogger<TesseractOcrService> logger, 
-            IDocumentStorageService storage, 
+            ILogger<TesseractOcrService> logger,
+            IDocumentStorageService storage,
             IMessagePublisher publisher,
             IElasticsearchService elasticsearchService)
             : base(logger, storage, publisher, elasticsearchService) { }
@@ -76,6 +76,7 @@ namespace Swen3.Services.Tests
                 UploadedAtUtc: DateTime.UtcNow,
                 StoragePath: "2025/12/05/key.pdf",
                 Metadata: "",
+                Summary: "",
                 CorrelationId: Guid.NewGuid().ToString(),
                 TenantId: "T1",
                 Version: 1
@@ -137,7 +138,7 @@ namespace Swen3.Services.Tests
 
             // Assert - Message should still be published
             _mocks.MockPublisher.Verify(p => p.PublishDocumentUploadedAsync(
-                It.IsAny<DocumentUploadedMessage>(), It.IsAny<string>(), It.IsAny<string>()), 
+                It.IsAny<DocumentUploadedMessage>(), It.IsAny<string>(), It.IsAny<string>()),
                 Times.Once);
         }
 
